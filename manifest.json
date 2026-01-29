@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "PolySearch: Market Assistant",
+  "version": "1.2",
+  "description": "Real-time prediction market assistant for hackers.",
+  "permissions": [
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "*://*.google.com/*",
+    "*://*.google.com.hk/*",
+    "https://clob.polymarket.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.google.com/search*",
+        "*://*.google.com.hk/search*"
+      ],
+      "js": ["content.js"],
+      "css": ["content.css"]
+    }
+  ]
+}

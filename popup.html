@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Polymarket Assistant</title>
+  <style>
+    :root {
+      --pm-blue: #0047ff;
+      --pm-dark: #0a0b0d;
+      --pm-gray: #f4f6f8;
+      --text-main: #111827;
+      --text-muted: #6b7280;
+    }
+
+    body {
+      width: 320px;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: white;
+    }
+
+    /* Header */
+    .header {
+      background: white;
+      color: var(--text-main);
+      padding: 24px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      background: var(--pm-blue);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(0, 71, 255, 0.2);
+    }
+
+    .logo-icon svg {
+      width: 20px;
+      height: 20px;
+      fill: white;
+    }
+
+    .header-info h1 {
+      font-size: 18px;
+      margin: 0;
+      font-weight: 800;
+      color: var(--pm-blue);
+    }
+
+    .header-info p {
+      font-size: 11px;
+      margin: 2px 0 0;
+      opacity: 0.7;
+    }
+
+    /* Search Box */
+    .search-container {
+      padding: 16px;
+      background: var(--pm-gray);
+    }
+
+    .search-box {
+      display: flex;
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 8px 12px;
+      gap: 8px;
+    }
+
+    .search-box input {
+      border: none;
+      outline: none;
+      width: 100%;
+      font-size: 13px;
+    }
+
+    /* Trending List */
+    .section-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      padding: 16px 16px 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .market-list {
+      padding: 0 16px 16px;
+    }
+
+    .market-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #f3f4f6;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .market-item:hover {
+      opacity: 0.7;
+    }
+
+    .market-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-main);
+      max-width: 200px;
+    }
+
+    .market-odds {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--pm-blue);
+      background: #eff6ff;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+
+    /* Footer Stats */
+    .footer {
+      padding: 16px;
+      border-top: 1px solid #f3f4f6;
+      display: flex;
+      justify-content: space-around;
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-value {
+      display: block;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .stat-label {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    button.primary-btn {
+      width: calc(100% - 32px);
+      margin: 0 16px 16px;
+      background: var(--pm-blue);
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 2L4.5 20.29L5.21 21L12 18L18.79 21L19.5 20.29L12 2Z" /></svg>
+    </div>
+    <div class="header-info">
+      <h1>PolySearch</h1>
+      <p>Prediction Market Assistant</p>
+    </div>
+  </div>
+
+  <div class="search-container">
+    <div class="search-box">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      <input type="text" id="searchInput" placeholder="Search markets...">
+    </div>
+  </div>
+
+  <div class="section-title">Trending Markets</div>
+  <div class="market-list" id="marketList">
+    <!-- Markets will be injected here -->
+  </div>
+
+  <button class="primary-btn" id="goHome">Open Polymarket</button>
+
+  <div class="footer">
+    <div class="stat-item">
+      <span class="stat-value">2.4k</span>
+      <span class="stat-label">Active Markets</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-value">$1.2B</span>
+      <span class="stat-label">Total Volume</span>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
