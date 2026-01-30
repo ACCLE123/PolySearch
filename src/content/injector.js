@@ -38,7 +38,9 @@ function updateOnchainMetrics(metrics) {
     </div>
   ` : '';
 
-  block.innerHTML = line3 + truthLine + radarLine + line1 + (line2 ? '<br><span class="pm-onchain-flow">' + line2 + '</span>' : '');
+  block.innerHTML = '';
+  // 暂时屏蔽详细链上指标，仅保留基础结构以待后续启用
+  block.style.display = 'none';
 }
 
 /**
@@ -73,7 +75,7 @@ function showResult(event, query) {
     </div>
     <div class="pm-title">${title}</div>
     <div class="pm-desc">Polymarket 预测市场</div>
-    <div class="pm-onchain pm-onchain-loading" data-onchain-block>Loading on-chain…</div>
+    <div class="pm-onchain pm-onchain-loading" data-onchain-block style="display:none;"></div>
     <div class="pm-actions">
       <button type="button" class="pm-btn-secondary" data-action="dismiss">Dismiss</button>
       <a href="${url}" target="_blank" rel="noopener" class="pm-btn-primary" style="text-align:center;text-decoration:none;">Open</a>

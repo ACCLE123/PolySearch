@@ -1,22 +1,19 @@
 {
   "manifest_version": 3,
   "name": "PolySearch: Market Assistant",
-  "version": "1.4",
-  "description": "Modularized prediction market assistant for hackers.",
+  "version": "1.5",
+  "description": "Smart prediction market assistant powered by on-chain data.",
   "permissions": [
-    "storage",
-    "tabs"
+    "storage"
   ],
   "host_permissions": [
     "https://gamma-api.polymarket.com/*",
     "https://clob.polymarket.com/*",
     "https://data-api.polymarket.com/*",
-    "https://rpc.ankr.com/*",
     "https://polygon-rpc.com/*",
     "https://rpc-mainnet.maticvigil.com/*",
     "https://polygon.llamarpc.com/*",
     "https://1rpc.io/matic/*",
-    "https://rpc.ankr.com/polygon/*",
     "*://*.google.com/*",
     "*://*.google.com.hk/*"
   ],
@@ -33,7 +30,12 @@
         "*://*.google.com/search*",
         "*://*.google.com.hk/search*"
       ],
-      "js": ["src/content/detector.js", "src/core/matcher.js", "src/core/storage.js", "src/content/injector.js", "src/content/index.js"]
+      "js": [
+        "src/content/detector.js", 
+        "src/core/storage.js", 
+        "src/content/injector.js", 
+        "src/content/index.js"
+      ]
     }
   ],
   "web_accessible_resources": [

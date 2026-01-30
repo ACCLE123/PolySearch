@@ -1,32 +1,65 @@
-// 搜索词与市场的相关度评分、阈值判断、取 top1
-// Content 通过 manifest 注入，与 index 同作用域，无需 export
+// 核心语义匹配引擎：基于 N-Gram 向量相似度算法
 
 /**
- * 从 (query, events) 中选出最相关的一个 event，低于阈值返回 null
- * @param {string} query - 已归一化的搜索词
- * @param {Array} events - Gamma API 返回的 events 数组
- * @returns {Object|null} 最相关的 event 或 null
+ * 将文本向量化为 3-Gram 计数对象
  */
-function matchBest(query, events) {
-  if (!query || !events || !Array.isArray(events) || events.length === 0) return null;
-  const words = query.trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) return null;
-
-  let best = null;
-  let bestScore = 0;
-  const threshold = 1; // 至少一个 query 词出现在 title/description 中
-
-  for (const event of events) {
-    const title = (event.title || '').toLowerCase();
-    const desc = (event.description || '').toLowerCase();
-    const text = title + ' ' + desc;
-    const score = words.filter(w => text.includes(w.toLowerCase())).length;
-    if (score > bestScore) {
-      bestScore = score;
-      best = event;
+export function getNGramVector(text) {
+  const n = 3;
+  const vector = {};
+  const words = (text || "").toLowerCase().split(/[\s,.-]+/);
+  
+  words.forEach(word => {
+    if (word.length < n) {
+      if (word.length > 0) vector[word] = (vector[word] || 0) + 1;
+      return;
     }
-  }
+    for (let i = 0; i <= word.length - n; i++) {
+      const gram = word.substring(i, i + n);
+      vector[gram] = (vector[gram] || 0) + 1;
+    }
+  });
+  return vector;
+}
 
-  if (bestScore < threshold) return null;
-  return best;
+/**
+ * 计算两个向量之间的余弦相似度
+ */
+export function cosineSimilarity(vecA, vecB) {
+  let dotProduct = 0;
+  let magA = 0;
+  let magB = 0;
+  const keys = new Set([...Object.keys(vecA), ...Object.keys(vecB)]);
+  
+  keys.forEach(key => {
+    const valA = vecA[key] || 0;
+    const valB = vecB[key] || 0;
+    dotProduct += valA * valB;
+    magA += valA * valA;
+    magB += valB * valB;
+  });
+  
+  return magA && magB ? dotProduct / (Math.sqrt(magA) * Math.sqrt(magB)) : 0;
+}
+
+/**
+ * 计算查询词与目标文本的语义关联分
+ */
+export function getSemanticScore(title, query) {
+  if (!title || !query) return 0;
+  const titleVec = getNGramVector(title);
+  const queryVec = getNGramVector(query);
+  let score = cosineSimilarity(titleVec, queryVec);
+
+  // 核心词硬匹配增益 (针对币种名等高频核心词)
+  const coreKeywords = ['btc', 'bitcoin', 'eth', 'ethereum', 'sol', 'solana', 'trump'];
+  const qWords = query.toLowerCase().split(/\s+/);
+  const tWords = title.toLowerCase().split(/\s+/);
+  
+  qWords.forEach(qw => {
+    if (coreKeywords.includes(qw) && tWords.some(tw => tw.includes(qw) || qw.includes(tw))) {
+      score += 0.2; 
+    }
+  });
+
+  return score;
 }

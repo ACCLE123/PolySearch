@@ -1,25 +1,25 @@
-// Background Service Worker — 消息处理、API 请求、缓存、abort/timeout、链上
+// Background Service Worker — 核心大脑：负责数据嗅探、语义匹配、缓存管理
 import { fetchMarkets } from './api/polymarket.js';
 import * as cache from './core/cache.js';
+import { getSemanticScore } from './core/matcher.js';
 import { getOnchainMetrics, discoverLiveHotTokens } from './web3/onchainService.js';
 
-let hotMarkets = []; // 存储活跃市场
+let hotMarkets = []; // 全局实时热点库
 
-// 新逻辑：通过链上嗅探发现真正的实时热点
+/**
+ * 核心任务：周期性从链上嗅探热门市场，并反查 API 补全元数据
+ */
 async function refreshHotMarkets() {
   try {
-    console.log("%c [Chain-First] 正在通过链上嗅探发现实时热点...", "color: #3b82f6;");
+    console.log("%c [Core] 开始实时链上热点探测...", "color: #3b82f6;");
     
-    // 1. 嗅探链上最活跃的 Token 列表
+    // 1. 获取最活跃 Token 列表
     const hotTokenIds = await discoverLiveHotTokens();
     const newHotMarkets = [];
     const seenSlugs = new Set();
 
     if (hotTokenIds && hotTokenIds.length > 0) {
-      console.log(`%c [Chain-First] 嗅探到 ${hotTokenIds.length} 个活跃 Token，正在批量反查市场...`, "color: #10b981;");
-      
-      // 使用更高效的并发反查，获取更多市场 (目标 50-100 个)
-      const CONCURRENCY = 15; // 并发请求数
+      const CONCURRENCY = 15;
       const targetTokens = hotTokenIds.slice(0, 150);
       
       for (let i = 0; i < targetTokens.length; i += CONCURRENCY) {
@@ -39,154 +39,121 @@ async function refreshHotMarkets() {
                 question: m.question,
                 conditionId: m.conditionId,
                 clobTokenIds: typeof m.clobTokenIds === 'string' ? JSON.parse(m.clobTokenIds) : m.clobTokenIds,
-                isNegRisk: false,
                 volume: Math.round(m.volumeNum || 0),
                 price: m.outcomePrices ? (parseFloat(JSON.parse(m.outcomePrices)[0]) * 100).toFixed(0) : "50"
               });
             }
-          } catch (e) {
-            // 静默失败，继续下一个
-          }
+          } catch (e) { /* ignore single error */ }
         }));
-        
-        // 如果已经收集够 100 个市场，可以提前结束
         if (newHotMarkets.length >= 100) break;
       }
     }
 
-    // 2. 最终热点库：按交易额排序
+    // 2. 更新并排序热点库
     if (newHotMarkets.length > 0) {
       hotMarkets = newHotMarkets.sort((a, b) => b.volume - a.volume);
-      console.log(`%c [Chain-Only] 实时链上热点已更新 (${hotMarkets.length} 个)`, "color: #10b981; font-weight: bold;");
-      console.table(hotMarkets.map(m => ({
-        Title: m.title,
-        Volume: m.volume,
-        Price: m.price + '%',
-        Tokens: m.clobTokenIds?.join(', '),
-        ConditionID: m.conditionId,
-        Source: 'On-chain'
-      })));
-    } else {
-      hotMarkets = [];
-      console.warn("[Chain-Only] 过去 3.5 分钟全链无活跃成交，热点库暂时为空");
+      console.log(`%c [Core] 链上热点就绪: ${hotMarkets.length} 个`, "color: #10b981; font-weight: bold;");
     }
   } catch (err) {
-    console.error("[HotSync] 同步失败:", err);
+    console.error("[Core] 刷新失败:", err);
   }
 }
 
-// 首次加载增加 1 秒延迟，确保网络环境就绪
+// 启动周期性任务
 setTimeout(refreshHotMarkets, 1000);
 setInterval(refreshHotMarkets, 5 * 60 * 1000);
 
+/**
+ * 消息中心
+ */
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  const handleFetch = async (url) => {
-    try {
-      const response = await fetch(url);
-      const text = await response.text();
-      const match = text.match(/(\[[\s\S]*\]|\{[\s\S]*\})/);
-      if (!match) throw new Error("No valid JSON found");
-      return JSON.parse(match[0]);
-    } catch (error) {
-      console.error("Fetch error:", error);
-      throw error;
-    }
-  };
-
+  
+  // 1. 弹出页数据请求
   if (request.type === 'FETCH_MARKETS') {
-    // 优先返回链上嗅探到的实时热点
-    if (hotMarkets && hotMarkets.length > 0) {
+    if (hotMarkets.length > 0) {
       sendResponse({ success: true, data: hotMarkets });
-      return true;
+    } else {
+      fetch('https://gamma-api.polymarket.com/events?limit=15&active=true&closed=false')
+        .then(r => r.json())
+        .then(data => sendResponse({ success: true, data }))
+        .catch(err => sendResponse({ success: false, error: err.message }));
     }
-    
-    // 兜底返回 API 默认事件
-    handleFetch('https://gamma-api.polymarket.com/events?limit=10&active=true&closed=false')
-      .then(data => sendResponse({ success: true, data }))
-      .catch(err => sendResponse({ success: false, error: err.message }));
     return true;
   }
 
+  // 2. 页面自动匹配 (核心功能)
   if (request.type === 'SEARCH_SPECIFIC_MARKET') {
     const query = (request.query || "").toLowerCase().trim();
-    console.log(`%c [Smart Match] 正在搜索: [${query}]`, "color: #f59e0b;");
+    const noiseWords = ['price', 'prediction', 'market', 'will', 'hit', 'up', 'down', 'or', 'is', 'the', 'to'];
+    const cleanQuery = query.split(/\s+/).filter(w => w.length > 1 && !noiseWords.includes(w)).join(' ') || query;
 
-    // 1. 组合搜索：优先 API 精准搜索，再从 Hot50 匹配
-    const searchUrl = `https://gamma-api.polymarket.com/markets?active=true&closed=false&limit=10&q=${encodeURIComponent(query)}`;
-    
-    handleFetch(searchUrl).then(data => {
-      // 这里的 data 是 markets 数组，比 events 更精准
+    if (cleanQuery.length < 2) {
+      sendResponse({ success: false });
+      return true;
+    }
+
+    (async () => {
+      // 策略：先本地热点库匹配，没中再去 API
       let best = null;
-      if (Array.isArray(data) && data.length > 0) {
-        // 过滤出标题或问题包含关键词的
-        best = data.find(m => 
-          (m.groupItemTitle || m.question || "").toLowerCase().includes(query)
-        ) || data[0];
+      
+      const localMatches = hotMarkets.map(m => ({
+        ...m,
+        matchScore: getSemanticScore(m.question || m.title || "", cleanQuery)
+      })).filter(m => m.matchScore > 0.4);
+
+      if (localMatches.length > 0) {
+        best = localMatches.sort((a, b) => b.matchScore - a.matchScore)[0];
+        console.log(`%c [Match] 本地库命中: ${best.question}`, "color: #10b981;");
+      } else {
+        try {
+          const res = await fetch(`https://gamma-api.polymarket.com/markets?active=true&closed=false&limit=10&q=${encodeURIComponent(cleanQuery)}`);
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            const scored = data.map(m => ({
+              ...m,
+              matchScore: getSemanticScore(m.question || m.groupItemTitle || "", cleanQuery)
+            }));
+            best = scored.filter(m => m.matchScore >= 0.45).sort((a, b) => b.matchScore - a.matchScore)[0];
+            if (best) console.log(`%c [Match] API 命中: ${best.question}`, "color: #10b981;");
+          }
+        } catch (e) { /* ignore */ }
       }
 
       if (best) {
-        console.log(`%c [Smart Match] 发现市场: ${best.question}`, "color: #10b981;");
         sendResponse({
           success: true,
-          title: best.question || best.groupItemTitle,
+          title: best.question || best.title || best.groupItemTitle,
           slug: best.slug,
-          question: best.question,
           conditionId: best.conditionId,
           clobTokenIds: typeof best.clobTokenIds === 'string' ? JSON.parse(best.clobTokenIds) : best.clobTokenIds,
-          isNegRisk: false, // markets 接口通常是标准市场
-          volume: Math.round(best.volumeNum || 0),
-          price: best.outcomePrices ? (parseFloat(JSON.parse(best.outcomePrices)[0]) * 100).toFixed(0) : "50"
+          volume: Math.round(best.volumeNum || best.volume || 0),
+          price: best.price || (best.outcomePrices ? (parseFloat(JSON.parse(best.outcomePrices)[0]) * 100).toFixed(0) : "50")
         });
       } else {
-        // 兜底：推荐 Hot50 第一名
-        sendResponse({ success: true, ...hotMarkets[0] });
+        sendResponse({ success: false });
       }
-    }).catch(() => {
-      sendResponse({ success: !!hotMarkets[0], ...hotMarkets[0] });
-    });
+    })();
     return true;
   }
 
-  // Step 7：SEARCH — 先查缓存，再调 API；abort 上一次请求、超时
+  // 3. 链上深度分析
+  if (request.type === 'FETCH_ONCHAIN') {
+    getOnchainMetrics(request).then(metrics => sendResponse({ metrics }));
+    return true;
+  }
+
+  // 4. 通用搜索
   if (request.type === 'SEARCH') {
-    const query = request.query;
-    const cached = cache.get(query);
+    const q = request.query;
+    const cached = cache.get(q);
     if (cached) {
-      sendResponse(cached);
+      sendResponse({ list: cached });
       return true;
     }
-    if (searchController) searchController.abort();
-    searchController = new AbortController();
-    if (searchTimeoutId) clearTimeout(searchTimeoutId);
-    searchTimeoutId = setTimeout(() => searchController.abort(), SEARCH_TIMEOUT_MS);
-
-    (async () => {
-      try {
-        const list = await fetchMarkets(query, { signal: searchController.signal });
-        cache.set(query, list);
-        sendResponse({ list: list || [] });
-      } catch (e) {
-        if (e?.name !== 'AbortError') console.warn('[PolySearch] SEARCH failed:', e);
-        sendResponse({ list: [] });
-      } finally {
-        if (searchTimeoutId) clearTimeout(searchTimeoutId);
-        searchTimeoutId = null;
-      }
-    })();
-    return true;
-  }
-
-  // Step 8：链上指标 — 按 conditionId/clobTokenIds 拉取，失败静默
-  if (request.type === 'FETCH_ONCHAIN') {
-    const { conditionId, clobTokenIds, isNegRisk } = request;
-    (async () => {
-      try {
-        const metrics = await getOnchainMetrics({ conditionId, clobTokenIds, isNegRisk });
-        sendResponse({ metrics: metrics || null });
-      } catch (e) {
-        sendResponse({ metrics: null });
-      }
-    })();
+    fetchMarkets(q).then(list => {
+      cache.set(q, list);
+      sendResponse({ list });
+    });
     return true;
   }
 });
