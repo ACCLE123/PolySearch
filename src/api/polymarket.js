@@ -2,15 +2,16 @@
 const GAMMA_BASE = 'https://gamma-api.polymarket.com';
 
 /**
- * 单次请求 Gamma：按 q 拉取 events
+ * 单次请求 Gamma：使用 public-search 接口按 q 拉取 events（与网页搜索一致）
  */
 async function fetchEventsByQuery(q, signal) {
-  const url = `${GAMMA_BASE}/events?limit=15&active=true&closed=false&q=${encodeURIComponent(q.trim())}`;
+  const url = `${GAMMA_BASE}/public-search?q=${encodeURIComponent(q.trim())}&limit_per_type=15`;
   const res = await fetch(url, { signal });
   const text = await res.text();
-  const match = text.match(/\[[\s\S]*\]/);
+  const match = text.match(/\{[\s\S]*\}/);
   if (!match) return [];
-  const list = JSON.parse(match[0]);
+  const data = JSON.parse(match[0]);
+  const list = data?.events;
   return Array.isArray(list) ? list : [];
 }
 
