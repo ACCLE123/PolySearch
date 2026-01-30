@@ -1,5 +1,30 @@
-// 向页面注入 Shadow DOM，毛玻璃弹窗 + 关闭/Dismiss（步骤 6）
+// 向页面注入 Shadow DOM，毛玻璃弹窗 + 关闭/Dismiss + 链上区块（步骤 8）
 const ROOT_ID = 'polysearch-root';
+
+/**
+ * 更新弹窗内的链上指标区块；无数据时隐藏
+ * @param {{ txCount?: string, traders?: string, volume?: string, flowYes?: string, flowNo?: string } | null} metrics
+ */
+function updateOnchainMetrics(metrics) {
+  const root = document.getElementById(ROOT_ID);
+  if (!root || !root.shadowRoot) return;
+  const block = root.shadowRoot.querySelector('[data-onchain-block]');
+  if (!block) return;
+  if (!metrics) {
+    block.style.display = 'none';
+    return;
+  }
+  block.style.display = '';
+  block.classList.remove('pm-onchain-loading');
+  const parts = [];
+  if (metrics.txCount) parts.push(metrics.txCount + ' tx');
+  if (metrics.traders) parts.push(metrics.traders + ' traders');
+  if (metrics.volume) parts.push(metrics.volume);
+  const line1 = parts.length ? 'On-chain (24h): ' + parts.join(' · ') : '';
+  const line2 = (metrics.flowYes != null && metrics.flowNo != null)
+    ? `Flow (24h): YES ${metrics.flowYes} · NO ${metrics.flowNo}` : '';
+  block.innerHTML = line1 + (line2 ? '<br><span class="pm-onchain-flow">' + line2 + '</span>' : '');
+}
 
 /**
  * 展示一个市场结果
@@ -33,6 +58,7 @@ function showResult(event, query) {
     </div>
     <div class="pm-title">${title}</div>
     <div class="pm-desc">Polymarket 预测市场</div>
+    <div class="pm-onchain pm-onchain-loading" data-onchain-block>Loading on-chain…</div>
     <div class="pm-actions">
       <button type="button" class="pm-btn-secondary" data-action="dismiss">Dismiss</button>
       <a href="${url}" target="_blank" rel="noopener" class="pm-btn-primary" style="text-align:center;text-decoration:none;">Open</a>

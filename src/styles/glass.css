@@ -28,6 +28,9 @@
   font-weight: 800;
   margin: 0 4px;
 }
+.pm-onchain { font-size: 12px; color: #6b7280; margin-bottom: 16px; line-height: 1.5; }
+.pm-onchain-loading { opacity: 0.7; }
+.pm-onchain-flow { font-size: 11px; color: #9ca3af; }
 .pm-actions { display: flex; gap: 12px; }
 .pm-btn-primary { flex: 1.5; background: #0047ff; color: white; border: none; padding: 12px 0; border-radius: 12px; font-weight: 600; cursor: pointer; }
 .pm-btn-secondary { flex: 1; background: #f3f4f6; color: #6b7280; border: none; padding: 12px 0; border-radius: 12px; font-weight: 500; cursor: pointer; }

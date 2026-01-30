@@ -10,6 +10,7 @@
   "host_permissions": [
     "https://gamma-api.polymarket.com/*",
     "https://clob.polymarket.com/*",
+    "https://data-api.polymarket.com/*",
     "*://*.google.com/*",
     "*://*.google.com.hk/*"
   ],

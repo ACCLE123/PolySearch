@@ -1,6 +1,7 @@
-// Background Service Worker — 消息处理、API 请求、缓存、abort/timeout
+// Background Service Worker — 消息处理、API 请求、缓存、abort/timeout、链上
 import { fetchMarkets } from './api/polymarket.js';
 import * as cache from './core/cache.js';
+import { getOnchainMetrics } from './web3/onchainService.js';
 
 let searchController = null;
 let searchTimeoutId = null;
@@ -98,6 +99,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       } finally {
         if (searchTimeoutId) clearTimeout(searchTimeoutId);
         searchTimeoutId = null;
+      }
+    })();
+    return true;
+  }
+
+  // Step 8：链上指标 — 按 conditionId/slug 拉取，失败静默
+  if (request.type === 'FETCH_ONCHAIN') {
+    const marketKey = request.conditionId || request.marketId || request.slug;
+    (async () => {
+      try {
+        const metrics = await getOnchainMetrics(marketKey);
+        sendResponse({ metrics: metrics || null });
+      } catch (e) {
+        sendResponse({ metrics: null });
       }
     })();
     return true;

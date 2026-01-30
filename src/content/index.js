@@ -19,6 +19,11 @@ async function runSearch() {
     if (market) {
       console.log('[PolySearch] match found, showing result');
       showResult(market, query);
+      const conditionId = market.markets?.[0]?.conditionId ?? market.conditionId ?? market.condition_id ?? market.id;
+      chrome.runtime.sendMessage({ type: 'FETCH_ONCHAIN', conditionId, slug: market.slug }, (res) => {
+        if (chrome.runtime.lastError) return;
+        if (typeof updateOnchainMetrics === 'function') updateOnchainMetrics(res?.metrics ?? null);
+      });
     }
   });
 }
