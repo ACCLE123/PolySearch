@@ -1,9 +1,12 @@
-// Content Script 入口 — 步骤 5：收结果后先走 Matcher，只有匹配成功才展示
+// Content Script 入口 — 步骤 6：cooldown 检查 + 毛玻璃 UI + Dismiss
 console.log('PolySearch loaded');
 
-function runSearch() {
+async function runSearch() {
   const query = getQuery();
   if (!query) return;
+  const inCooldown = await isInCooldown(query);
+  if (inCooldown) return;
+
   chrome.runtime.sendMessage({ type: 'SEARCH', query }, (response) => {
     if (chrome.runtime.lastError) {
       console.warn('[PolySearch] sendMessage:', chrome.runtime.lastError.message);
@@ -13,7 +16,7 @@ function runSearch() {
     const market = matchBest(query, response.list);
     if (market) {
       console.log('[PolySearch] match found, showing result');
-      showResult(market);
+      showResult(market, query);
     }
   });
 }
