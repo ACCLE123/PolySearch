@@ -1,87 +1,289 @@
-/* Glassmorphism UI — 通过 Shadow DOM 注入，不影响页面 */
+/* Glassmorphism UI — 现代简洁风格 */
 .pm-container {
   position: fixed;
   top: 24px;
-  right: 24px;
+  right: 80px;
   z-index: 2147483647;
   width: 350px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
   border-radius: 24px;
-  box-shadow: 0 24px 48px rgba(0, 71, 255, 0.08);
-  border: 1px solid rgba(0, 71, 255, 0.1);
+  box-shadow: 
+    0 20px 50px rgba(0, 71, 255, 0.12),
+    0 0 0 1px rgba(0, 71, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   padding: 24px;
+  color: #111827;
+  overflow: hidden;
+  /* 初始状态：隐藏且位移 - 增强版入场动画 */
+  opacity: 0;
+  transform: translateY(-20px) scale(0.92);
+  filter: blur(4px);
+  /* 华丽的入场动画 */
+  transition: 
+    opacity 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+    transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1),
+    filter 0.4s ease-out,
+    top 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
+    right 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
+    width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
+    height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
+    padding 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
+    border-radius 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
+    background 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
+    backdrop-filter 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* 入场可见状态 */
+.pm-container.pm-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0);
+}
+
+/* 顶部收纳状态：PolySearch 专属胶囊模式 */
+.pm-container.pm-visible.pm-docked {
+  top: 16px !important;
+  right: 120px !important;
+  transform: translateY(0) scale(1) !important;
+  width: 220px !important;
+  min-height: 36px !important;
+  max-height: 60px !important;
+  padding: 8px 14px !important;
+  border-radius: 18px !important;
+  
+  /* 极客毛玻璃：纯净白色 + 高级感模糊 */
+  background: rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  
+  /* 品牌色呼吸光晕 */
+  box-shadow: 
+    0 4px 12px rgba(0, 71, 255, 0.1),
+    0 0 0 1px rgba(0, 71, 255, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+  
+  cursor: pointer !important;
+  position: fixed !important;
+  overflow: hidden !important;
+  opacity: 1 !important;
+  z-index: 2147483647 !important;
+  visibility: visible !important;
+}
+
+/* Poly 渐变进度填充：Indigo -> Blue -> Cyan */
+.pm-container.pm-docked::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--prob-width, 0%);
+  background: linear-gradient(90deg, 
+    rgba(79, 70, 229, 0.25), 
+    rgba(37, 99, 235, 0.2), 
+    rgba(6, 182, 212, 0.15)) !important;
+  transition: width 1.8s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 0;
+  border-radius: 18px 0 0 18px;
+  border-right: 2px solid rgba(0, 71, 255, 0.4); /* 进度条边缘呼吸线 */
+}
+
+/* 胶囊悬停时隐藏进度条 */
+.pm-container.pm-docked:hover::before {
+  width: 0% !important;
+  opacity: 0 !important;
+  transition: 
+    width 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.35s ease !important;
+}
+
+/* 胶囊模式布局 - 只在非hover时应用 */
+.pm-container.pm-docked:not(:hover) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px !important; /* 上下留白，适应多行 */
+}
+
+/* 鼠标悬停时恢复完整卡片 */
+.pm-container.pm-visible.pm-docked:hover {
+  top: 16px !important; /* 与胶囊位置保持一致 */
+  right: 80px !important;
+  transform: translateY(0) scale(1) !important;
+  width: 350px !important;
+  height: auto !important;
+  min-height: auto !important;
+  max-height: none !important;
+  padding: 24px !important;
+  border-radius: 24px !important;
+  background: rgba(255, 255, 255, 0.88) !important;
+  backdrop-filter: blur(18px) saturate(180%) !important;
+  box-shadow: 
+    0 20px 50px rgba(0, 71, 255, 0.12),
+    0 0 0 1px rgba(0, 71, 255, 0.05) !important;
+  border: none !important; /* 移除胶囊的边框 */
+  overflow: hidden !important;
+  opacity: 1 !important;
+}
+
+/* 恢复时保持纵向布局 */
+.pm-container.pm-docked:hover {
+  display: block !important;
+}
+
+/* 胶囊模式下：隐藏所有非标题元素 */
+.pm-container.pm-docked:not(:hover) .pm-header-minimal,
+.pm-container.pm-docked:not(:hover) .pm-probability-container,
+.pm-container.pm-docked:not(:hover) .pm-desc,
+.pm-container.pm-docked:not(:hover) .pm-onchain,
+.pm-container.pm-docked:not(:hover) .pm-actions {
+  display: none !important;
+}
+
+/* 胶囊模式下：标题样式 - 极致清晰度 */
+.pm-container.pm-docked:not(:hover) .pm-title {
+  display: -webkit-box !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  -webkit-line-clamp: 3 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  word-break: break-word !important;
+  position: relative !important;
+  z-index: 1 !important;
+  line-height: 1.5 !important;
+  text-align: center !important;
+  width: 100% !important;
+  letter-spacing: 0.1px !important;
+  
+  /* 科技深蓝黑 */
+  color: #0f172a !important; 
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8) !important;
+}
+
+/* 胶囊模式下显示标签形式的option */
+.pm-container.pm-docked:not(:hover) .pm-choice-inline {
+  display: inline-block !important;
+  background: rgba(0, 71, 255, 0.08);
+  color: #0047ff;
+  padding: 0px 6px;
+  border-radius: 4px;
+  margin-left: 4px;
+  font-weight: 800 !important;
+  font-size: 10px !important;
+  border: 1px solid rgba(0, 71, 255, 0.1);
+  line-height: 1.4;
+  vertical-align: middle;
+}
+
+/* 正常模式下隐藏括号形式 */
+.pm-container:not(.pm-docked) .pm-choice-inline {
+  display: none !important;
+}
+
+/* 隐藏标题内的选项标签（在胶囊模式下） */
+.pm-container.pm-docked:not(:hover) .pm-choice-tag {
+  display: none !important;
+}
+
+/* 子元素交错动画 - 增强版 */
+.pm-animate-item {
+  opacity: 0;
+  transform: translateY(20px) scale(0.95);
+  filter: blur(2px);
+  transition: 
+    opacity 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), 
+    transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1),
+    filter 0.4s ease-out;
+}
+.pm-visible .pm-animate-item {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0);
 }
 
 .pm-header-minimal { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
 .pm-logo-circle { width: 32px; height: 32px; background: #0047ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .pm-logo-circle svg { width: 18px; height: 18px; fill: white; }
 .pm-logo-circle img { width: 100%; height: 100%; object-fit: cover; }
-.pm-brand-name { font-size: 14px; font-weight: 800; color: #0047ff; }
-.pm-title { font-weight: 700; font-size: 18px; color: #111827; margin-bottom: 10px; }
-.pm-desc { font-size: 14px; color: #4b5563; margin-bottom: 24px; line-height: 1.6; }
-.pm-odds-badge {
+.pm-brand-name { font-size: 13px; font-weight: 800; color: #0047ff; letter-spacing: 0.5px; }
+
+.pm-title { font-weight: 700; font-size: 18px; color: #111827; margin-bottom: 12px; line-height: 1.4; }
+.pm-choice-tag {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 8px;
   background: #0047ff;
   color: white;
-  padding: 2px 8px;
-  border-radius: 6px;
+  font-size: 11px;
   font-weight: 800;
-  margin: 0 4px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
-.pm-onchain { font-size: 12px; color: #6b7280; margin-bottom: 16px; line-height: 1.5; }
-.pm-sentiment { font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 4px; display: flex; align-items: center; gap: 4px; }
-.pm-sentiment.bullish { color: #10b981; }
-.pm-sentiment.bearish { color: #ef4444; }
-.pm-sentiment.neutral { color: #6b7280; }
-.pm-onchain-loading { opacity: 0.7; }
 
-/* Truth Audit UI */
-.pm-truth-box {
+/* 概率胜率样式 */
+.pm-probability-container {
   background: rgba(0, 71, 255, 0.03);
-  border-radius: 12px;
-  padding: 12px;
-  margin-bottom: 16px;
+  padding: 16px;
+  border-radius: 16px;
+  margin-bottom: 20px;
   border: 1px solid rgba(0, 71, 255, 0.05);
 }
-.pm-truth-header {
+.pm-prob-label { font-size: 12px; font-weight: 600; color: #6b7280; }
+.pm-prob-value {
+  font-size: 32px;
+  font-weight: 600;
+  color: #000;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 11px;
-  font-weight: 700;
-  color: #374151;
-  margin-bottom: 8px;
-  text-transform: uppercase;
+  align-items: baseline;
+  gap: 1px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  letter-spacing: -0.05em;
+  font-variant-numeric: tabular-nums;
+  min-width: 80px;
 }
-.pm-truth-status { padding: 2px 6px; border-radius: 4px; font-size: 10px; }
-.pm-truth-status.active { background: #dcfce7; color: #166534; }
-.pm-truth-status.resolved { background: #dbeafe; color: #1e40af; }
-.pm-truth-status.unverified { background: #fee2e2; color: #991b1b; }
-.pm-truth-bar {
-  height: 6px;
-  background: #e5e7eb;
-  border-radius: 3px;
-  overflow: hidden;
-  margin-bottom: 6px;
-}
-.pm-truth-fill {
+.pm-prob-unit { font-size: 16px; font-weight: 500; margin-left: 1px; }
+.pm-prob-bar-bg { height: 6px; background: #e5edff; border-radius: 3px; margin-top: 10px; overflow: hidden; }
+.pm-prob-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #3b82f6, #60a5fa);
-  transition: width 0.5s ease-out;
+  background: #000;
+  border-radius: 3px;
+  transition: width 1.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.pm-truth-desc { font-size: 10px; color: #6b7280; text-align: right; }
-.pm-onchain-radar {
-  font-size: 10px;
-  color: #3b82f6;
-  background: rgba(59, 130, 246, 0.05);
-  padding: 6px 10px;
-  border-radius: 8px;
-  margin-bottom: 12px;
-  border-left: 3px solid #3b82f6;
-  font-weight: 500;
-}
-.pm-onchain-flow { font-size: 11px; color: #9ca3af; }
+
+.pm-desc { font-size: 13px; color: #6b7280; margin-bottom: 20px; line-height: 1.5; }
+
 .pm-actions { display: flex; gap: 12px; }
-.pm-btn-primary { flex: 1.5; background: #0047ff; color: white; border: none; padding: 12px 0; border-radius: 12px; font-weight: 600; cursor: pointer; }
-.pm-btn-secondary { flex: 1; background: #f3f4f6; color: #6b7280; border: none; padding: 12px 0; border-radius: 12px; font-weight: 500; cursor: pointer; }
+.pm-btn-primary { 
+  flex: 1.5; 
+  background: #0047ff; 
+  color: white; 
+  border: none; 
+  padding: 12px 0; 
+  border-radius: 12px; 
+  font-weight: 700; 
+  cursor: pointer; 
+  transition: all 0.2s; 
+  text-align: center; 
+  text-decoration: none;
+}
+.pm-btn-primary:hover { background: #0037cc; transform: translateY(-1px); }
+.pm-btn-secondary { 
+  flex: 1; 
+  background: #f3f4f6; 
+  color: #4b5563; 
+  border: none; 
+  padding: 12px 0; 
+  border-radius: 12px; 
+  font-weight: 600; 
+  cursor: pointer; 
+}
+.pm-onchain { font-size: 12px; color: #6b7280; margin-bottom: 16px; line-height: 1.5; }

@@ -2,6 +2,33 @@
 console.log('PolySearch loaded');
 
 const DEBOUNCE_MS = 400;
+let scrollTimer = null;
+
+// 处理滚动时的交互效果 (顶部收纳方案)
+function handleScrollInteraction() {
+  const root = document.getElementById('polysearch-root');
+  if (!root || !root.shadowRoot) return;
+  
+  const container = root.shadowRoot.querySelector('.pm-container');
+  if (!container) return;
+
+  // 只要用户开始滚动，就进入收纳状态
+  if (!container.classList.contains('pm-docked')) {
+    container.classList.add('pm-docked');
+    
+    // 触发进度条动画：先重置为0，然后延迟触发填充
+    const currentWidth = container.style.getPropertyValue('--prob-width') || '0%';
+    const targetWidth = container.dataset.probability || '0';
+    
+    container.style.setProperty('--prob-width', '0%');
+    setTimeout(() => {
+      container.style.setProperty('--prob-width', `${targetWidth}%`);
+    }, 200);
+  }
+}
+
+// 监听滚动事件
+window.addEventListener('scroll', handleScrollInteraction, { passive: true });
 
 async function runSearch() {
   const query = getQuery();
@@ -19,6 +46,7 @@ async function runSearch() {
     // 构造一个兼容 showResult 的对象
     const market = {
       title: response.title,
+      choice: response.choice, // 增加选项显示
       slug: response.slug,
       icon: response.icon,
       price: response.price,

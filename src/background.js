@@ -39,6 +39,7 @@ async function refreshHotMarkets() {
                 slug: eventSlug,
                 icon: m.icon || (m.events && m.events[0] && m.events[0].icon),
                 question: m.question,
+                choice: m.groupItemTitle, // 记录具体选项（如 <250k）
                 conditionId: m.conditionId,
                 clobTokenIds: typeof m.clobTokenIds === 'string' ? JSON.parse(m.clobTokenIds) : m.clobTokenIds,
                 volume: Math.round(m.volumeNum || 0),
@@ -125,9 +126,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         const eventSlug = (best.events && best.events[0] && best.events[0].slug) || best.slug;
         const eventTitle = (best.events && best.events[0] && best.events[0].title) || best.question || best.title || best.groupItemTitle;
         const eventIcon = best.icon || (best.events && best.events[0] && best.events[0].icon);
+        const choice = best.choice || best.groupItemTitle; // 获取具体选项名
+
         sendResponse({
           success: true,
           title: eventTitle,
+          choice: choice, // 传递选项名
           slug: eventSlug,
           icon: eventIcon,
           conditionId: best.conditionId,

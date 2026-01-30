@@ -44,6 +44,49 @@ function updateOnchainMetrics(metrics) {
 }
 
 /**
+ * 模拟 Magic UI 的 NumberTicker 效果
+ * @param {HTMLElement} el - 目标元素
+ * @param {number} start - 起始值
+ * @param {number} end - 结束值
+ * @param {number} duration - 持续时间 (ms)
+ */
+/**
+ * 模拟 Magic UI 的 NumberTicker 效果
+ * @param {HTMLElement} el - 目标元素
+ * @param {number} start - 起始值
+ * @param {number} end - 结束值
+ * @param {number} duration - 持续时间 (ms)
+ * @param {boolean} useLocale - 是否使用千分位格式化
+ */
+function animateNumberTicker(el, start, end, duration = 1500, useLocale = false) {
+  if (!el) return;
+  const target = parseFloat(end);
+  const startVal = parseFloat(start);
+  const startTime = performance.now();
+
+  function update(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+
+    // EaseOutQuart: 1 - (1 - x)^4
+    const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+    const current = startVal + (target - startVal) * easeOutQuart;
+    
+    const val = Math.round(current);
+    el.textContent = useLocale ? val.toLocaleString() : val;
+
+    if (progress < 1) {
+      window.requestAnimationFrame(update);
+    } else {
+      const finalVal = Math.round(target);
+      el.textContent = useLocale ? finalVal.toLocaleString() : finalVal;
+    }
+  }
+
+  window.requestAnimationFrame(update);
+}
+
+/**
  * 展示一个市场结果
  * @param {Object} event - Gamma API 的 event 对象，至少含 title、slug
  * @param {string} query - 当前搜索词，用于 dismiss 后写入 cooldown
@@ -62,22 +105,42 @@ function showResult(event, query) {
   shadow.appendChild(link);
 
   const title = (event.title || event.slug || 'Market').replace(/</g, '&lt;');
+  const choice = event.choice; // 增加具体选项
   const url = `https://polymarket.com/event/${event.slug}`;
   const iconUrl = event.icon || '';
+  const probability = parseFloat(event.price || '50');
 
   const wrap = document.createElement('div');
   wrap.className = 'pm-container';
   wrap.innerHTML = `
-    <div class="pm-header-minimal">
+    <div class="pm-header-minimal pm-animate-item" style="transition-delay: 0.2s;">
       <div class="pm-logo-circle">
-        ${iconUrl ? `<img src="${iconUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">` : `<svg viewBox="0 0 24 24"><path d="M12 2L4.5 20.29L5.21 21L12 18L18.79 21L19.5 20.29L12 2Z"/></svg>`}
+        ${iconUrl ? `<img src="${iconUrl}">` : `<svg viewBox="0 0 24 24"><path d="M12 2L4.5 20.29L5.21 21L12 18L18.79 21L19.5 20.29L12 2Z"/></svg>`}
       </div>
       <div class="pm-brand-name">POLYSEARCH</div>
     </div>
-    <div class="pm-title">${title}</div>
-    <div class="pm-desc">Polymarket 预测市场</div>
+    <div class="pm-title pm-animate-item" style="transition-delay: 0.4s;">
+      ${title}${choice && choice !== title ? ` <span class="pm-choice-inline">(${choice})</span>` : ''}
+      ${choice && choice !== title ? `<div class="pm-choice-tag">Option: ${choice}</div>` : ''}
+    </div>
+    
+    <div class="pm-probability-container pm-animate-item" style="transition-delay: 0.6s;">
+      <div style="flex: 1;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span class="pm-prob-label">Winning Probability</span>
+          <span class="pm-prob-value"><span data-prob-num>0</span><span class="pm-prob-unit">%</span></span>
+        </div>
+        <div class="pm-prob-bar-bg">
+          <div class="pm-prob-bar-fill" style="width: 0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pm-desc pm-animate-item" style="transition-delay: 0.8s;">
+      Polymarket 预测市场 · 实时成交额 $<span data-volume-num>0</span>
+    </div>
     <div class="pm-onchain pm-onchain-loading" data-onchain-block style="display:none;"></div>
-    <div class="pm-actions">
+    <div class="pm-actions pm-animate-item" style="transition-delay: 1.0s;">
       <button type="button" class="pm-btn-secondary" data-action="dismiss">Dismiss</button>
       <a href="${url}" target="_blank" rel="noopener" class="pm-btn-primary" style="text-align:center;text-decoration:none;">Open</a>
     </div>
@@ -90,4 +153,89 @@ function showResult(event, query) {
 
   shadow.appendChild(wrap);
   document.body.appendChild(root);
+
+  // 存储 probability 到 dataset，供滚动动画使用
+  wrap.dataset.probability = probability;
+
+  // 触发入场动画：添加 pm-visible 类 (参考 Motion 触发方式)
+  requestAnimationFrame(() => {
+    wrap.classList.add('pm-visible');
+    // 初始化胶囊进度条宽度为 0
+    wrap.style.setProperty('--prob-width', '0%');
+  });
+
+  // 动画效果：初次入场时执行数字动画
+  setTimeout(() => {
+    const bar = wrap.querySelector('.pm-prob-bar-fill');
+    const numEl = wrap.querySelector('[data-prob-num]');
+    const volEl = wrap.querySelector('[data-volume-num]');
+    
+    const volume = parseFloat(event.volumeNum || 0);
+
+    if (bar) {
+      bar.style.width = `${probability}%`;
+    }
+    
+    // 首次动画
+    if (numEl) {
+      animateNumberTicker(numEl, 0, probability, 2000);
+    }
+
+    if (volEl && volume > 0) {
+      animateNumberTicker(volEl, 0, volume, 2000, true);
+    }
+  }, 700);
+
+  // 监听悬停事件：展开和收缩时都执行数字动画
+  let hoverTimer = null;
+  let leaveTimer = null;
+  let isAnimating = false;
+  
+  // 展开时的动画
+  wrap.addEventListener('mouseenter', () => {
+    if (!wrap.classList.contains('pm-docked') || isAnimating) return;
+    
+    clearTimeout(hoverTimer);
+    clearTimeout(leaveTimer);
+    
+    // 重置胶囊进度条（展开时不需要显示）
+    wrap.style.setProperty('--prob-width', '0%');
+    
+    hoverTimer = setTimeout(() => {
+      isAnimating = true;
+      
+      const numEl = wrap.querySelector('[data-prob-num]');
+      const volEl = wrap.querySelector('[data-volume-num]');
+      const volume = parseFloat(event.volumeNum || 0);
+      
+      if (numEl) {
+        numEl.textContent = '0';
+        animateNumberTicker(numEl, 0, probability, 1200);
+      }
+      
+      if (volEl && volume > 0) {
+        volEl.textContent = '0';
+        animateNumberTicker(volEl, 0, volume, 1200, true);
+      }
+      
+      setTimeout(() => {
+        isAnimating = false;
+      }, 1300);
+    }, 50);
+  });
+  
+  // 收缩时的动画：触发胶囊进度条填充
+  wrap.addEventListener('mouseleave', () => {
+    clearTimeout(hoverTimer);
+    
+    if (!wrap.classList.contains('pm-docked')) return;
+    
+    // 先重置进度条
+    wrap.style.setProperty('--prob-width', '0%');
+    
+    // 延迟触发蓝色进度条填充动画
+    leaveTimer = setTimeout(() => {
+      wrap.style.setProperty('--prob-width', `${probability}%`);
+    }, 200); // 让卡片先收缩到胶囊形态，然后触发进度条动画
+  });
 }
