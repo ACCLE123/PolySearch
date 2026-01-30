@@ -15,8 +15,9 @@
 }
 
 .pm-header-minimal { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-.pm-logo-circle { width: 36px; height: 36px; background: #0047ff; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
-.pm-logo-circle svg { width: 20px; height: 20px; fill: white; }
+.pm-logo-circle { width: 32px; height: 32px; background: #0047ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.pm-logo-circle svg { width: 18px; height: 18px; fill: white; }
+.pm-logo-circle img { width: 100%; height: 100%; object-fit: cover; }
 .pm-brand-name { font-size: 14px; font-weight: 800; color: #0047ff; }
 .pm-title { font-weight: 700; font-size: 18px; color: #111827; margin-bottom: 10px; }
 .pm-desc { font-size: 14px; color: #4b5563; margin-bottom: 24px; line-height: 1.6; }

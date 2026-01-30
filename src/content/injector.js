@@ -63,13 +63,14 @@ function showResult(event, query) {
 
   const title = (event.title || event.slug || 'Market').replace(/</g, '&lt;');
   const url = `https://polymarket.com/event/${event.slug}`;
+  const iconUrl = event.icon || '';
 
   const wrap = document.createElement('div');
   wrap.className = 'pm-container';
   wrap.innerHTML = `
     <div class="pm-header-minimal">
       <div class="pm-logo-circle">
-        <svg viewBox="0 0 24 24"><path d="M12 2L4.5 20.29L5.21 21L12 18L18.79 21L19.5 20.29L12 2Z"/></svg>
+        ${iconUrl ? `<img src="${iconUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">` : `<svg viewBox="0 0 24 24"><path d="M12 2L4.5 20.29L5.21 21L12 18L18.79 21L19.5 20.29L12 2Z"/></svg>`}
       </div>
       <div class="pm-brand-name">POLYSEARCH</div>
     </div>

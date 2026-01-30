@@ -20,6 +20,7 @@ async function runSearch() {
     const market = {
       title: response.title,
       slug: response.slug,
+      icon: response.icon,
       price: response.price,
       volumeNum: response.volume,
       conditionId: response.conditionId,

@@ -40,8 +40,12 @@ function renderMarkets(markets) {
 
     const item = document.createElement('div');
     item.className = 'market-item';
+    const iconUrl = market.icon || '';
     item.innerHTML = `
-      <span class="market-name">${name}</span>
+      <div style="display:flex;align-items:center;gap:8px;flex:1;overflow:hidden;">
+        ${iconUrl ? `<img src="${iconUrl}" style="width:16px;height:16px;border-radius:50%;flex-shrink:0;">` : `<div style="width:16px;height:16px;background:#eee;border-radius:50%;flex-shrink:0;"></div>`}
+        <span class="market-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name}</span>
+      </div>
       <span class="market-odds">${price}%</span>
     `;
     item.onclick = () => {
