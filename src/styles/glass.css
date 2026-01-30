@@ -44,27 +44,23 @@
   filter: blur(0);
 }
 
-/* 顶部收纳状态：简洁胶囊 - 白色背景 + 绿色进度 */
+/* 顶部收纳状态：极简黑白 + 单色进度 */
 .pm-container.pm-visible.pm-docked {
   top: 16px !important;
   right: 120px !important;
   transform: translateY(0) scale(1) !important;
   width: 230px !important;
-  min-height: 34px !important;
-  max-height: 54px !important;
-  padding: 7px 14px !important;
-  border-radius: 17px !important;
-  
-  /* 纯净白色背景 */
-  background: rgba(255, 255, 255, 0.95) !important;
-  backdrop-filter: blur(20px) saturate(140%) !important;
-  
-  /* 柔和中性阴影 */
-  box-shadow: 
-    0 2px 12px rgba(0, 0, 0, 0.08),
-    0 0 0 1px rgba(0, 0, 0, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
-  
+  min-height: 32px !important;
+  max-height: 50px !important;
+  padding: 6px 12px !important;
+  border-radius: 16px !important;
+
+  background: #ffffff !important;
+  backdrop-filter: blur(10px) saturate(110%) !important;
+  border: 1px solid #e5e7eb !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+  isolation: isolate; /* 限制混合模式影响范围 */
+
   cursor: pointer !important;
   position: fixed !important;
   overflow: hidden !important;
@@ -73,7 +69,7 @@
   visibility: visible !important;
 }
 
-/* 绿色进度填充 - 使用品牌绿色 #31A159 */
+/* 单色进度填充 - 简洁无渐变 */
 .pm-container.pm-docked::before {
   content: '';
   position: absolute;
@@ -81,15 +77,10 @@
   top: 0;
   bottom: 0;
   width: var(--prob-width, 0%);
-  background: linear-gradient(90deg, 
-    rgba(49, 161, 89, 0.35) 0%, 
-    rgba(49, 161, 89, 0.28) 50%,
-    rgba(49, 161, 89, 0.22) 100%) !important;
+  background: #111827 !important; /* 黑色进度条 */
   transition: width 1.8s cubic-bezier(0.16, 1, 0.3, 1);
   z-index: 0;
-  border-radius: 17px 0 0 17px;
-  /* 绿色进度条右侧边缘高光 */
-  box-shadow: inset -1px 0 0 rgba(49, 161, 89, 0.45);
+  border-radius: 16px 0 0 16px;
 }
 
 /* 胶囊悬停时隐藏进度条 */
@@ -145,11 +136,11 @@
   display: none !important;
 }
 
-/* 胶囊模式下：标题样式 - Trading 风格 */
+/* 胶囊模式下：标题样式 - 极简风格 */
 .pm-container.pm-docked:not(:hover) .pm-title {
   display: -webkit-box !important;
-  font-size: 11.5px !important;
-  font-weight: 650 !important; /* 介于 semibold 和 bold 之间 */
+  font-size: 11px !important;
+  font-weight: 600 !important;
   margin: 0 !important;
   padding: 0 !important;
   -webkit-line-clamp: 3 !important;
@@ -159,33 +150,32 @@
   word-break: break-word !important;
   position: relative !important;
   z-index: 1 !important;
-  line-height: 1.45 !important;
+  line-height: 1.4 !important;
   text-align: center !important;
   width: 100% !important;
-  letter-spacing: 0.15px !important;
-  
-  /* 深沉中性色 - 在红绿背景上都清晰 */
-  color: #1e293b !important; 
-  text-shadow: 
-    0 1px 3px rgba(255, 255, 255, 0.9),
-    0 0 1px rgba(255, 255, 255, 0.6) !important;
+  letter-spacing: 0.1px !important;
+
+  color: #ffffff !important;
+  text-shadow: none !important;
+  mix-blend-mode: difference; /* 白字在白底变黑，覆盖黑条变白 */
 }
 
-/* Option 标签：市场风格 */
+/* Option 标签：极简风格 */
 .pm-container.pm-docked:not(:hover) .pm-choice-inline {
   display: inline-block !important;
-  background: rgba(100, 116, 139, 0.12);
-  color: #475569;
-  padding: 1px 7px;
-  border-radius: 5px;
-  margin-left: 5px;
-  font-weight: 700 !important;
+  background: transparent;
+  color: #ffffff;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-left: 4px;
+  font-weight: 600 !important;
   font-size: 9.5px !important;
-  border: 1px solid rgba(100, 116, 139, 0.15);
-  line-height: 1.4;
+  border: 1px solid rgba(17, 24, 39, 0.12);
+  line-height: 1.35;
   vertical-align: middle;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  text-transform: none;
+  letter-spacing: 0.2px;
+  mix-blend-mode: difference; /* 与标题一致的反色效果 */
 }
 
 /* 正常模式下隐藏括号形式 */
@@ -220,7 +210,7 @@
 .pm-logo-circle img { width: 100%; height: 100%; object-fit: cover; }
 .pm-brand-name { font-size: 13px; font-weight: 800; color: #0047ff; letter-spacing: 0.5px; }
 
-.pm-title { font-weight: 700; font-size: 18px; color: #111827; margin-bottom: 12px; line-height: 1.4; }
+.pm-title { font-weight: 700; font-size: 18px; color: #1F1F1F; margin-bottom: 12px; line-height: 1.4; }
 .pm-choice-tag {
   display: inline-block;
   margin-top: 6px;
