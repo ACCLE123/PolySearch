@@ -5,97 +5,67 @@ PolySearch is a Chrome extension that bridges search intent with Polymarket’s 
 
 ---
 
-## 🌍 Project Overview
+## ⭐ Project Overview
 
-### 📌 Background
+### Background
 Major real-world events — elections, macroeconomic data, tech trends, and sports — drive massive search activity on Google.  
-At the same time, prediction markets like **Polymarket** transform these events into collective probability signals and market-driven forecasts.
+At the same time, prediction markets like **Polymarket** convert these events into collective probability signals and market-driven forecasts.
 
 However, these two worlds remain largely disconnected.  
 When users search for an event, they often **don’t know whether a corresponding prediction market already exists**, nor how the market is pricing the outcome.
 
----
-
-### ❗ Problem
+### Problem
 > There is no direct bridge between search intent and prediction markets, making it difficult for high-intent users to discover relevant prediction opportunities.
 
----
-
-### 💡 Solution
+### Solution
 **PolySearch** is a lightweight Chrome extension that acts as a logical bridge between Google Search and prediction markets.
 
 When a user searches for a real-world event on Google, PolySearch:
-- Detects the user’s search intent
-- Matches the query against active Polymarket markets
-- Surfaces a non-intrusive prompt directly on the search results page
-- Allows one-click navigation to the corresponding Polymarket market
+- Detects the user’s search intent  
+- Matches the query against active Polymarket markets  
+- Surfaces a non-intrusive prompt directly on the search results page  
+- Allows one-click navigation to the corresponding Polymarket market  
 
 The extension does not modify search results, does not force redirects, and can be fully dismissed by the user.
 
-> 📸 *Insert demo GIF here showing the in-page prompt*
+> 📸 *Insert demo GIF here*
 
 ---
 
 ## ⭐ Key Features
 
-### ⚡ Client-side Only
-PolySearch runs entirely in the browser using client-side JavaScript:
-- No external servers required
-- Search queries are never sent to third-party backends
-- Near-instant response times
-- Ideal for rapid MVP validation in a hackathon setting
+- **Client-side Only**  
+  Runs entirely in the browser with no external backend. Search queries never leave the user’s device.
+
+- **Direct Polymarket API Integration**  
+  Fetches publicly available market metadata via the Polymarket Gamma API.  
+  *Read-only — no trading actions are performed.*
+
+- **Non-intrusive UI**  
+  Lightweight glassmorphism-style prompt injected via Shadow DOM without affecting Google’s layout.
+
+- **One-click Navigation**  
+  Jump directly from Google Search to the relevant Polymarket market page.
 
 ---
 
-### 🔌 Direct Polymarket Gamma API Integration
-PolySearch directly consumes publicly available market metadata via the **Polymarket Gamma API**:
-- Matches Google search queries with active prediction markets
-- Reads market data only — no account access or trading actions
+## 🛠 Technical Architecture
 
-> *Note: PolySearch only reads publicly available market metadata and does not perform any trading actions on behalf of users.*
+- **Framework**  
+  Chrome Manifest V3, Vanilla JavaScript (ES6+)
 
----
+- **Injection**  
+  Content Scripts monitor Google Search URL changes (SPA-compatible)  
+  Shadow DOM isolates styles and prevents CSS conflicts
 
-### 🪟 Non-intrusive Glassmorphism UI
-- Modern glassmorphism-inspired design
-- UI injected using **Shadow DOM** to avoid CSS conflicts
-- Does not disrupt or reflow Google’s search results layout
+- **Data Flow**  
+  Client-side `fetch` calls to the Polymarket Gamma API  
+  No server-side processing or proxying
 
----
+- **Matching Logic**  
+  Keyword normalization and filtering with confidence thresholds  
+  Prompts appear only for highly relevant queries
 
-### 🚀 One-click Market Navigation
-When a relevant market is found, users can jump directly from Google Search to the corresponding Polymarket market page with a single click.
-
----
-
-## 🧱 Technical Architecture
-
-PolySearch follows a simple and robust front-end architecture:
-
-### 🧩 Core
-- Chrome **Manifest V3**
-- Vanilla JavaScript (ES6+)
-- No heavy frameworks or backend services
-
----
-
-### 🧬 Page Injection
-- Uses **Content Scripts** to monitor URL changes on Google Search (SPA-compatible)
-- Injects UI via **Shadow DOM** for style isolation
-
----
-
-### 🔄 Data Flow
-- Uses `fetch` to directly call the Polymarket Gamma API
-- No server-side processing or API proxying
-
----
-
-### 🎯 Matching Logic
-- Client-side keyword normalization and filtering
-- Confidence thresholds to ensure prompts appear only for highly relevant queries
-
-**High-level flow:**
 ```text
 Google Search Query
         ↓
