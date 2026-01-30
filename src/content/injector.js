@@ -57,7 +57,6 @@ function showResult(event, query) {
       <div class="pm-brand-name">POLYSEARCH</div>
     </div>
     <div class="pm-title">${title}</div>
-    <div class="pm-desc">Polymarket 预测市场</div>
     <div class="pm-onchain pm-onchain-loading" data-onchain-block>Loading on-chain…</div>
     <div class="pm-actions">
       <button type="button" class="pm-btn-secondary" data-action="dismiss">Dismiss</button>

@@ -1,6 +1,6 @@
-// chrome.storage.local 封装：dismiss 记录 + 24h 冷却
+// chrome.storage.local 封装：dismiss 记录 + 冷却
 const STORAGE_KEY = 'polysearch_dismissed';
-const COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 小时
+const COOLDOWN_MS = 1 * 60 * 60 * 1000; // 1 小时
 
 /**
  * 记录某 query 被用户 dismiss 的时间
@@ -16,9 +16,9 @@ function setDismissed(query) {
 }
 
 /**
- * 是否在冷却期内（该 query 在 24h 内被 dismiss 过）
+ * 是否在冷却期内（该 query 在 1h 内被 dismiss 过）
  * @param {string} query - 归一化搜索词
- * @param {number} [cooldownMs] - 冷却毫秒数，默认 24h
+ * @param {number} [cooldownMs] - 冷却毫秒数，默认 1h
  * @returns {Promise<boolean>}
  */
 function isInCooldown(query, cooldownMs = COOLDOWN_MS) {
