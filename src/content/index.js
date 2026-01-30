@@ -1,4 +1,4 @@
-// Content Script 入口 — 步骤 3：取 query、发 SEARCH、收结果并展示第一个市场
+// Content Script 入口 — 步骤 5：收结果后先走 Matcher，只有匹配成功才展示
 console.log('PolySearch loaded');
 
 function runSearch() {
@@ -9,9 +9,11 @@ function runSearch() {
       console.warn('[PolySearch] sendMessage:', chrome.runtime.lastError.message);
       return;
     }
-    if (response && response.list && response.list.length > 0) {
-      console.log('[PolySearch] received', response.list.length, 'markets');
-      showResult(response.list[0]);
+    if (!response || !response.list || response.list.length === 0) return;
+    const market = matchBest(query, response.list);
+    if (market) {
+      console.log('[PolySearch] match found, showing result');
+      showResult(market);
     }
   });
 }
