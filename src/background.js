@@ -30,12 +30,13 @@ async function refreshHotMarkets() {
             const data = await res.json();
             if (data && data.length > 0) {
               const m = data[0];
-              if (seenSlugs.has(m.slug)) return;
-              seenSlugs.add(m.slug);
+              const eventSlug = (m.events && m.events[0] && m.events[0].slug) || m.slug;
+              if (seenSlugs.has(eventSlug)) return;
+              seenSlugs.add(eventSlug);
 
               newHotMarkets.push({
-                title: m.question || m.groupItemTitle,
-                slug: m.slug,
+                title: (m.events && m.events[0] && m.events[0].title) || m.question || m.groupItemTitle,
+                slug: eventSlug,
                 question: m.question,
                 conditionId: m.conditionId,
                 clobTokenIds: typeof m.clobTokenIds === 'string' ? JSON.parse(m.clobTokenIds) : m.clobTokenIds,
@@ -120,10 +121,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
 
       if (best) {
+        const eventSlug = (best.events && best.events[0] && best.events[0].slug) || best.slug;
+        const eventTitle = (best.events && best.events[0] && best.events[0].title) || best.question || best.title || best.groupItemTitle;
         sendResponse({
           success: true,
-          title: best.question || best.title || best.groupItemTitle,
-          slug: best.slug,
+          title: eventTitle,
+          slug: eventSlug,
           conditionId: best.conditionId,
           clobTokenIds: typeof best.clobTokenIds === 'string' ? JSON.parse(best.clobTokenIds) : best.clobTokenIds,
           volume: Math.round(best.volumeNum || best.volume || 0),
