@@ -2,6 +2,19 @@
 // Content 通过 manifest 注入，与 index 同作用域，无需 export
 
 /**
+ * 从 event 中拼出可匹配的全文（title、description、slug、所有 market 的 question）
+ */
+function getSearchableText(event) {
+  const parts = [
+    event.title,
+    event.description,
+    event.slug,
+    (event.markets || []).map((m) => m.question || m.title || '').join(' ')
+  ].filter(Boolean);
+  return parts.join(' ').toLowerCase();
+}
+
+/**
  * 从 (query, events) 中选出最相关的一个 event，低于阈值返回 null
  * @param {string} query - 已归一化的搜索词
  * @param {Array} events - Gamma API 返回的 events 数组
@@ -14,13 +27,11 @@ function matchBest(query, events) {
 
   let best = null;
   let bestScore = 0;
-  const threshold = 1; // 至少一个 query 词出现在 title/description 中
+  const threshold = 1; // 至少一个 query 词出现在 event 全文（含 market 题目）中
 
   for (const event of events) {
-    const title = (event.title || '').toLowerCase();
-    const desc = (event.description || '').toLowerCase();
-    const text = title + ' ' + desc;
-    const score = words.filter(w => text.includes(w.toLowerCase())).length;
+    const text = getSearchableText(event);
+    const score = words.filter((w) => text.includes(w.toLowerCase())).length;
     if (score > bestScore) {
       bestScore = score;
       best = event;
