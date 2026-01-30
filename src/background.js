@@ -1,5 +1,10 @@
-// Background Service Worker — 消息处理、API 请求
+// Background Service Worker — 消息处理、API 请求、缓存、abort/timeout
 import { fetchMarkets } from './api/polymarket.js';
+import * as cache from './core/cache.js';
+
+let searchController = null;
+let searchTimeoutId = null;
+const SEARCH_TIMEOUT_MS = 10000;
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   const handleFetch = async (url) => {
@@ -69,15 +74,30 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
 
-  // Step 3：SEARCH — 调 Gamma API，回传市场列表
+  // Step 7：SEARCH — 先查缓存，再调 API；abort 上一次请求、超时
   if (request.type === 'SEARCH') {
+    const query = request.query;
+    const cached = cache.get(query);
+    if (cached) {
+      sendResponse(cached);
+      return true;
+    }
+    if (searchController) searchController.abort();
+    searchController = new AbortController();
+    if (searchTimeoutId) clearTimeout(searchTimeoutId);
+    searchTimeoutId = setTimeout(() => searchController.abort(), SEARCH_TIMEOUT_MS);
+
     (async () => {
       try {
-        const list = await fetchMarkets(request.query);
+        const list = await fetchMarkets(query, { signal: searchController.signal });
+        cache.set(query, list);
         sendResponse({ list: list || [] });
       } catch (e) {
-        console.warn('[PolySearch] SEARCH failed:', e);
+        if (e?.name !== 'AbortError') console.warn('[PolySearch] SEARCH failed:', e);
         sendResponse({ list: [] });
+      } finally {
+        if (searchTimeoutId) clearTimeout(searchTimeoutId);
+        searchTimeoutId = null;
       }
     })();
     return true;

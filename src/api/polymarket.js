@@ -2,21 +2,24 @@
 const GAMMA_BASE = 'https://gamma-api.polymarket.com';
 
 /**
- * 按关键词拉取市场列表（events）
+ * 按关键词拉取市场列表（events），支持 abort 与超时
  * @param {string} query - 搜索词
+ * @param {{ signal?: AbortSignal, timeoutMs?: number }} [opts] - 可选：abort 信号、超时毫秒
  * @returns {Promise<Array>} events 数组，失败返回 []
  */
-export async function fetchMarkets(query) {
+export async function fetchMarkets(query, opts = {}) {
   if (!query || typeof query !== 'string') return [];
+  const { signal, timeoutMs = 10000 } = opts;
   try {
     const url = `${GAMMA_BASE}/events?limit=10&active=true&closed=false&q=${encodeURIComponent(query.trim())}`;
-    const res = await fetch(url);
+    const res = await fetch(url, { signal });
     const text = await res.text();
     const match = text.match(/\[[\s\S]*\]/);
     if (!match) return [];
     const list = JSON.parse(match[0]);
     return Array.isArray(list) ? list : [];
   } catch (err) {
+    if (err?.name === 'AbortError') return [];
     console.error('[PolySearch] Gamma API Error:', err);
     return [];
   }

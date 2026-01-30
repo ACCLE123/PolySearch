@@ -1,5 +1,7 @@
-// Content Script 入口 — 步骤 6：cooldown 检查 + 毛玻璃 UI + Dismiss
+// Content Script 入口 — 步骤 7：cooldown + debounce + cache/abort 在 Background
 console.log('PolySearch loaded');
+
+const DEBOUNCE_MS = 400;
 
 async function runSearch() {
   const query = getQuery();
@@ -21,15 +23,22 @@ async function runSearch() {
   });
 }
 
-// 首次加载：若当前已是搜索页且带 q，发一次
-runSearch();
+function scheduleRunSearch() {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(runSearch, DEBOUNCE_MS);
+}
 
-// 短轮询：Google 搜索是 SPA，URL 变化时无整页刷新，轮询检测 q 变化
+let debounceTimer = null;
 let lastQuery = getQuery();
+
+// 首次加载：若已是搜索页且带 q，debounce 后发一次
+if (lastQuery) scheduleRunSearch();
+
+// 短轮询：URL 变化时 debounce 再发 SEARCH
 setInterval(() => {
   const current = getQuery();
   if (current !== lastQuery) {
     lastQuery = current;
-    if (current) runSearch();
+    if (current) scheduleRunSearch();
   }
 }, 500);
