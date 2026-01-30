@@ -14,7 +14,8 @@
     "*://*.google.com.hk/*"
   ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "src/background.js",
+    "type": "module"
   },
   "action": {
     "default_popup": "popup.html"
@@ -25,8 +26,7 @@
         "*://*.google.com/search*",
         "*://*.google.com.hk/search*"
       ],
-      "js": ["src/content/index.js"],
-      "css": ["src/styles/glass.css"]
+      "js": ["src/content/detector.js", "src/content/injector.js", "src/content/index.js"]
     }
   ]
 }
