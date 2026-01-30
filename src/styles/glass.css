@@ -29,7 +29,57 @@
   margin: 0 4px;
 }
 .pm-onchain { font-size: 12px; color: #6b7280; margin-bottom: 16px; line-height: 1.5; }
+.pm-sentiment { font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 4px; display: flex; align-items: center; gap: 4px; }
+.pm-sentiment.bullish { color: #10b981; }
+.pm-sentiment.bearish { color: #ef4444; }
+.pm-sentiment.neutral { color: #6b7280; }
 .pm-onchain-loading { opacity: 0.7; }
+
+/* Truth Audit UI */
+.pm-truth-box {
+  background: rgba(0, 71, 255, 0.03);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(0, 71, 255, 0.05);
+}
+.pm-truth-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #374151;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+.pm-truth-status { padding: 2px 6px; border-radius: 4px; font-size: 10px; }
+.pm-truth-status.active { background: #dcfce7; color: #166534; }
+.pm-truth-status.resolved { background: #dbeafe; color: #1e40af; }
+.pm-truth-status.unverified { background: #fee2e2; color: #991b1b; }
+.pm-truth-bar {
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+.pm-truth-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+  transition: width 0.5s ease-out;
+}
+.pm-truth-desc { font-size: 10px; color: #6b7280; text-align: right; }
+.pm-onchain-radar {
+  font-size: 10px;
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.05);
+  padding: 6px 10px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  border-left: 3px solid #3b82f6;
+  font-weight: 500;
+}
 .pm-onchain-flow { font-size: 11px; color: #9ca3af; }
 .pm-actions { display: flex; gap: 12px; }
 .pm-btn-primary { flex: 1.5; background: #0047ff; color: white; border: none; padding: 12px 0; border-radius: 12px; font-weight: 600; cursor: pointer; }
