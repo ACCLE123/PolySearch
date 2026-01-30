@@ -1,7 +1,9 @@
 # PolySearch 🔍
 
-**Turn every Google search into a prediction opportunity.**  
-PolySearch is a Chrome extension that bridges search intent with Polymarket’s prediction reality.
+
+<strong><em>Search the World. See the Odds.</em></strong>
+
+PolySearch is a Chrome extension that bridges search intent with Polymarket's prediction reality.
 
 ---
 
@@ -72,3 +74,44 @@ Google Search Query
 Client-side Matching Logic
         ↓
 Prediction Market Prompt → One-click Redirect
+```
+
+---
+
+## 🚀 Getting Started
+
+### Installation
+
+1. Download and unzip this repository.  
+2. Open `chrome://extensions/` in Google Chrome.  
+3. Enable **Developer mode** (top right).  
+4. Click **Load unpacked**.  
+5. Select the extension folder that contains `manifest.json`.
+
+### Demo Search Suggestions
+
+- `US Election 2024`  
+- `Bitcoin price end of year`  
+- `Fed rate hike`  
+
+PolySearch will automatically surface relevant prediction markets on the Google Search results page.
+
+---
+
+## ⚠️ Known Limitations
+
+- The current matching logic is primarily keyword-based and may miss semantically related events.  
+- Market discovery depends on the availability and freshness of publicly accessible Polymarket data.
+
+---
+
+## 🧭 Roadmap
+
+### Short-term
+- Support additional information platforms (e.g. Twitter / X) to enable in-context market discovery while browsing trending discussions.
+
+### Mid-term
+- Introduce lightweight semantic matching (such as front-end NLP libraries or embeddings) to improve relevance and accuracy.
+
+### Long-term
+- Display richer market context within the prompt, including probability trends and historical market movements.
