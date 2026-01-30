@@ -127,7 +127,7 @@ function showResult(event, query) {
     <div class="pm-probability-container pm-animate-item" style="transition-delay: 0.6s;">
       <div style="flex: 1;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span class="pm-prob-label">Winning Probability</span>
+          <span class="pm-prob-label">Market Odds</span>
           <span class="pm-prob-value"><span data-prob-num>0</span><span class="pm-prob-unit">%</span></span>
         </div>
         <div class="pm-prob-bar-bg">

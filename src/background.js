@@ -1,9 +1,10 @@
 // Background Service Worker — 核心大脑：负责数据嗅探、语义匹配、缓存管理
 import { fetchMarkets } from './api/polymarket.js';
 import * as cache from './core/cache.js';
-import { getSemanticScore } from './core/matcher.js';
+import { getSemanticScore, MarketIndex } from './core/matcher.js';
 import { getOnchainMetrics, discoverLiveHotTokens } from './web3/onchainService.js';
 
+const marketIndex = new MarketIndex();
 let hotMarkets = []; // 全局实时热点库
 
 /**
@@ -55,6 +56,7 @@ async function refreshHotMarkets() {
     // 2. 更新并排序热点库
     if (newHotMarkets.length > 0) {
       hotMarkets = newHotMarkets.sort((a, b) => b.volume - a.volume);
+      marketIndex.update(hotMarkets); // [新增] 更新倒排索引
       console.log(`%c [Core] 链上热点就绪: ${hotMarkets.length} 个`, "color: #10b981; font-weight: bold;");
     }
   } catch (err) {
@@ -96,30 +98,75 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 
     (async () => {
-      // 策略：先本地热点库匹配，没中再去 API
+      // 策略：先通过倒排索引检索候选集 (Retrieval)，然后用 BM25 重排序 (Ranking)
       let best = null;
+      const corpusStats = marketIndex.getCorpusStats();
+      const MIN_SCORE_THRESHOLD = 2.0; // BM25 最低分数阈值（过滤无意义搜索）
       
-      const localMatches = hotMarkets.map(m => ({
-        ...m,
-        matchScore: getSemanticScore(m.question || m.title || "", cleanQuery)
-      })).filter(m => m.matchScore > 0.4);
+      // 1. [优化] 优先从倒排索引中召回候选集，极大减少向量计算量
+      const candidates = marketIndex.search(cleanQuery);
+      
+      console.log(`%c [Match] 索引召回 ${candidates.length} 个候选`, "color: #3b82f6;");
+      
+      // 对所有候选者使用 BM25 打分
+      const scoredCandidates = candidates.map((m, idx) => {
+        const text = m.question || m.title || m.choice || "";
+        const score = getSemanticScore(text, cleanQuery, corpusStats, idx === 0); // 仅对第一个候选打印 debug
+        return { ...m, matchScore: score };
+      });
 
-      if (localMatches.length > 0) {
-        best = localMatches.sort((a, b) => b.matchScore - a.matchScore)[0];
-        console.log(`%c [Match] 本地库命中: ${best.question}`, "color: #10b981;");
+      if (scoredCandidates.length > 0) {
+        // 返回分数最高的，但需要超过阈值
+        const topCandidate = scoredCandidates.sort((a, b) => b.matchScore - a.matchScore)[0];
+        if (topCandidate.matchScore >= MIN_SCORE_THRESHOLD) {
+          best = topCandidate;
+          console.log(`%c [Match] 索引召回命中: ${best.question} (BM25 score: ${best.matchScore.toFixed(4)})`, "color: #10b981;");
+        } else {
+          console.log(`%c [Match] 最高分 ${topCandidate.matchScore.toFixed(4)} < 阈值 ${MIN_SCORE_THRESHOLD}，忽略结果`, "color: #ef4444;");
+        }
       } else {
+        // 2. 兜底：如果索引没中，尝试全局暴力匹配
+        console.log(`%c [Match] 索引无结果，执行全局扫描...`, "color: #f59e0b;");
+        const globalMatches = hotMarkets.map((m, idx) => {
+          const text = m.question || m.title || "";
+          const score = getSemanticScore(text, cleanQuery, corpusStats, idx === 0); // 仅对第一个打印 debug
+          return { ...m, matchScore: score };
+        });
+        
+        if (globalMatches.length > 0) {
+          const topGlobal = globalMatches.sort((a, b) => b.matchScore - a.matchScore)[0];
+          if (topGlobal.matchScore >= MIN_SCORE_THRESHOLD) {
+            best = topGlobal;
+            console.log(`%c [Match] 全局扫描命中: ${best.question} (BM25 score: ${best.matchScore.toFixed(4)})`, "color: #10b981;");
+          } else {
+            console.log(`%c [Match] 最高分 ${topGlobal.matchScore.toFixed(4)} < 阈值 ${MIN_SCORE_THRESHOLD}，忽略结果`, "color: #ef4444;");
+          }
+        }
+      }
+
+      // 3. API 兜底：如果本地热点库全军覆没，再去 API 搜
+      if (!best) {
+        console.log(`%c [Match] 本地无结果，请求 API...`, "color: #f59e0b;");
         try {
           const res = await fetch(`https://gamma-api.polymarket.com/markets?active=true&closed=false&limit=10&q=${encodeURIComponent(cleanQuery)}`);
           const data = await res.json();
-          if (Array.isArray(data)) {
-            const scored = data.map(m => ({
-              ...m,
-              matchScore: getSemanticScore(m.question || m.groupItemTitle || "", cleanQuery)
-            }));
-            best = scored.filter(m => m.matchScore >= 0.45).sort((a, b) => b.matchScore - a.matchScore)[0];
-            if (best) console.log(`%c [Match] API 命中: ${best.question}`, "color: #10b981;");
+          if (Array.isArray(data) && data.length > 0) {
+            const scored = data.map((m, idx) => {
+              const text = m.question || m.groupItemTitle || "";
+              const score = getSemanticScore(text, cleanQuery, corpusStats, idx === 0); // 仅对第一个打印 debug
+              return { ...m, matchScore: score };
+            });
+            const topAPI = scored.sort((a, b) => b.matchScore - a.matchScore)[0];
+            if (topAPI && topAPI.matchScore >= MIN_SCORE_THRESHOLD) {
+              best = topAPI;
+              console.log(`%c [Match] API 命中: ${best.question} (BM25 score: ${best.matchScore.toFixed(4)})`, "color: #10b981;");
+            } else if (topAPI) {
+              console.log(`%c [Match] API 最高分 ${topAPI.matchScore.toFixed(4)} < 阈值 ${MIN_SCORE_THRESHOLD}，忽略结果`, "color: #ef4444;");
+            }
           }
-        } catch (e) { /* ignore */ }
+        } catch (e) { 
+          console.error('[Match] API 请求失败:', e);
+        }
       }
 
       if (best) {
