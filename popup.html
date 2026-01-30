@@ -95,6 +95,8 @@
 
     .market-list {
       padding: 0 16px 16px;
+      max-height: 400px;
+      overflow-y: auto;
     }
 
     .market-item {
@@ -190,12 +192,12 @@
 
   <div class="footer">
     <div class="stat-item">
-      <span class="stat-value">2.4k</span>
-      <span class="stat-label">Active Markets</span>
+      <span class="stat-value" id="marketCount">100+</span>
+      <span class="stat-label">On-chain Detected</span>
     </div>
     <div class="stat-item">
-      <span class="stat-value">$1.2B</span>
-      <span class="stat-label">Total Volume</span>
+      <span class="stat-value" id="scanStatus">Live</span>
+      <span class="stat-label">Sniffer Status</span>
     </div>
   </div>
 

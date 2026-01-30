@@ -11,6 +11,12 @@
     "https://gamma-api.polymarket.com/*",
     "https://clob.polymarket.com/*",
     "https://data-api.polymarket.com/*",
+    "https://rpc.ankr.com/*",
+    "https://polygon-rpc.com/*",
+    "https://rpc-mainnet.maticvigil.com/*",
+    "https://polygon.llamarpc.com/*",
+    "https://1rpc.io/matic/*",
+    "https://rpc.ankr.com/polygon/*",
     "*://*.google.com/*",
     "*://*.google.com.hk/*"
   ],

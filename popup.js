@@ -6,21 +6,36 @@ const MOCK_FALLBACK = [
 
 function renderMarkets(markets) {
   const marketList = document.getElementById('marketList');
+  const sectionTitle = document.querySelector('.section-title');
   marketList.innerHTML = '';
   
   const displayMarkets = Array.isArray(markets) ? markets : MOCK_FALLBACK;
+  
+  if (sectionTitle) {
+    sectionTitle.innerText = `Hot Markets (${displayMarkets.length})`;
+  }
 
-  displayMarkets.slice(0, 5).forEach(market => {
+  const marketCount = document.getElementById('marketCount');
+  if (marketCount) marketCount.innerText = displayMarkets.length;
+
+  // 增加显示数量，优先使用链上数据格式
+  displayMarkets.forEach(market => {
     const name = market.title || market.question || "Market";
     let price = "50";
     
-    if (market.markets && market.markets[0] && market.markets[0].outcomePrices) {
+    // 兼容多种 API 数据格式
+    if (market.price) {
+      price = market.price;
+    } else if (market.markets && market.markets[0] && market.markets[0].outcomePrices) {
       try {
         const prices = JSON.parse(market.markets[0].outcomePrices);
         price = (parseFloat(prices[0]) * 100).toFixed(0);
       } catch(e) { price = "50"; }
-    } else if (market.price) {
-      price = market.price;
+    } else if (market.outcomePrices) {
+      try {
+        const prices = typeof market.outcomePrices === 'string' ? JSON.parse(market.outcomePrices) : market.outcomePrices;
+        price = (parseFloat(prices[0]) * 100).toFixed(0);
+      } catch(e) { price = "50"; }
     }
 
     const item = document.createElement('div');

@@ -1,11 +1,83 @@
 // Background Service Worker — 消息处理、API 请求、缓存、abort/timeout、链上
 import { fetchMarkets } from './api/polymarket.js';
 import * as cache from './core/cache.js';
-import { getOnchainMetrics } from './web3/onchainService.js';
+import { getOnchainMetrics, discoverLiveHotTokens } from './web3/onchainService.js';
 
-let searchController = null;
-let searchTimeoutId = null;
-const SEARCH_TIMEOUT_MS = 10000;
+let hotMarkets = []; // 存储活跃市场
+
+// 新逻辑：通过链上嗅探发现真正的实时热点
+async function refreshHotMarkets() {
+  try {
+    console.log("%c [Chain-First] 正在通过链上嗅探发现实时热点...", "color: #3b82f6;");
+    
+    // 1. 嗅探链上最活跃的 Token 列表
+    const hotTokenIds = await discoverLiveHotTokens();
+    const newHotMarkets = [];
+    const seenSlugs = new Set();
+
+    if (hotTokenIds && hotTokenIds.length > 0) {
+      console.log(`%c [Chain-First] 嗅探到 ${hotTokenIds.length} 个活跃 Token，正在批量反查市场...`, "color: #10b981;");
+      
+      // 使用更高效的并发反查，获取更多市场 (目标 50-100 个)
+      const CONCURRENCY = 15; // 并发请求数
+      const targetTokens = hotTokenIds.slice(0, 150);
+      
+      for (let i = 0; i < targetTokens.length; i += CONCURRENCY) {
+        const batch = targetTokens.slice(i, i + CONCURRENCY);
+        await Promise.all(batch.map(async (tid) => {
+          try {
+            const res = await fetch(`https://gamma-api.polymarket.com/markets?clob_token_ids=${tid}`);
+            const data = await res.json();
+            if (data && data.length > 0) {
+              const m = data[0];
+              if (seenSlugs.has(m.slug)) return;
+              seenSlugs.add(m.slug);
+
+              newHotMarkets.push({
+                title: m.question || m.groupItemTitle,
+                slug: m.slug,
+                question: m.question,
+                conditionId: m.conditionId,
+                clobTokenIds: typeof m.clobTokenIds === 'string' ? JSON.parse(m.clobTokenIds) : m.clobTokenIds,
+                isNegRisk: false,
+                volume: Math.round(m.volumeNum || 0),
+                price: m.outcomePrices ? (parseFloat(JSON.parse(m.outcomePrices)[0]) * 100).toFixed(0) : "50"
+              });
+            }
+          } catch (e) {
+            // 静默失败，继续下一个
+          }
+        }));
+        
+        // 如果已经收集够 100 个市场，可以提前结束
+        if (newHotMarkets.length >= 100) break;
+      }
+    }
+
+    // 2. 最终热点库：按交易额排序
+    if (newHotMarkets.length > 0) {
+      hotMarkets = newHotMarkets.sort((a, b) => b.volume - a.volume);
+      console.log(`%c [Chain-Only] 实时链上热点已更新 (${hotMarkets.length} 个)`, "color: #10b981; font-weight: bold;");
+      console.table(hotMarkets.map(m => ({
+        Title: m.title,
+        Volume: m.volume,
+        Price: m.price + '%',
+        Tokens: m.clobTokenIds?.join(', '),
+        ConditionID: m.conditionId,
+        Source: 'On-chain'
+      })));
+    } else {
+      hotMarkets = [];
+      console.warn("[Chain-Only] 过去 3.5 分钟全链无活跃成交，热点库暂时为空");
+    }
+  } catch (err) {
+    console.error("[HotSync] 同步失败:", err);
+  }
+}
+
+// 首次加载增加 1 秒延迟，确保网络环境就绪
+setTimeout(refreshHotMarkets, 1000);
+setInterval(refreshHotMarkets, 5 * 60 * 1000);
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   const handleFetch = async (url) => {
@@ -22,56 +94,56 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   };
 
   if (request.type === 'FETCH_MARKETS') {
-    handleFetch('https://gamma-api.polymarket.com/events?limit=5&active=true&closed=false')
+    // 优先返回链上嗅探到的实时热点
+    if (hotMarkets && hotMarkets.length > 0) {
+      sendResponse({ success: true, data: hotMarkets });
+      return true;
+    }
+    
+    // 兜底返回 API 默认事件
+    handleFetch('https://gamma-api.polymarket.com/events?limit=10&active=true&closed=false')
       .then(data => sendResponse({ success: true, data }))
       .catch(err => sendResponse({ success: false, error: err.message }));
     return true;
   }
 
   if (request.type === 'SEARCH_SPECIFIC_MARKET') {
-    const url = `https://gamma-api.polymarket.com/events?limit=1&active=true&closed=false&q=${encodeURIComponent(request.query)}`;
-    handleFetch(url)
-      .then(data => {
-        const event = data[0];
-        if (event && event.markets && event.markets.length > 0) {
-          const activeMarkets = event.markets.filter(m => m.active && !m.closed);
-          if (activeMarkets.length === 0) return sendResponse({ success: false });
-          let bestMarket = activeMarkets[0];
-          let maxPrice = 0;
-          let bestOutcomeIndex = 0;
-          activeMarkets.forEach(m => {
-            const prices = typeof m.outcomePrices === 'string' ? JSON.parse(m.outcomePrices) : m.outcomePrices;
-            const outcomes = typeof m.outcomes === 'string' ? JSON.parse(m.outcomes) : m.outcomes;
-            prices.forEach((p, idx) => {
-              const currentPrice = parseFloat(p);
-              if (currentPrice > maxPrice) {
-                maxPrice = currentPrice;
-                bestMarket = m;
-                bestOutcomeIndex = idx;
-              }
-            });
-          });
-          const outcomes = typeof bestMarket.outcomes === 'string' ? JSON.parse(bestMarket.outcomes) : bestMarket.outcomes;
-          const outcomeName = outcomes[bestOutcomeIndex];
-          let displayTitle = bestMarket.question || event.title;
-          if (outcomeName && !["Yes", "No"].includes(outcomeName)) {
-            displayTitle = `${displayTitle} (${outcomeName})`;
-          }
-          sendResponse({
-            success: true,
-            title: displayTitle,
-            price: (maxPrice * 100).toFixed(0),
-            slug: event.slug,
-            volume: Math.round(event.volumeNum || bestMarket.volumeNum || 0)
-          });
-        } else {
-          sendResponse({ success: false });
-        }
-      })
-      .catch(err => {
-        console.error("Search Error:", err);
-        sendResponse({ success: false, error: err.message });
-      });
+    const query = (request.query || "").toLowerCase().trim();
+    console.log(`%c [Smart Match] 正在搜索: [${query}]`, "color: #f59e0b;");
+
+    // 1. 组合搜索：优先 API 精准搜索，再从 Hot50 匹配
+    const searchUrl = `https://gamma-api.polymarket.com/markets?active=true&closed=false&limit=10&q=${encodeURIComponent(query)}`;
+    
+    handleFetch(searchUrl).then(data => {
+      // 这里的 data 是 markets 数组，比 events 更精准
+      let best = null;
+      if (Array.isArray(data) && data.length > 0) {
+        // 过滤出标题或问题包含关键词的
+        best = data.find(m => 
+          (m.groupItemTitle || m.question || "").toLowerCase().includes(query)
+        ) || data[0];
+      }
+
+      if (best) {
+        console.log(`%c [Smart Match] 发现市场: ${best.question}`, "color: #10b981;");
+        sendResponse({
+          success: true,
+          title: best.question || best.groupItemTitle,
+          slug: best.slug,
+          question: best.question,
+          conditionId: best.conditionId,
+          clobTokenIds: typeof best.clobTokenIds === 'string' ? JSON.parse(best.clobTokenIds) : best.clobTokenIds,
+          isNegRisk: false, // markets 接口通常是标准市场
+          volume: Math.round(best.volumeNum || 0),
+          price: best.outcomePrices ? (parseFloat(JSON.parse(best.outcomePrices)[0]) * 100).toFixed(0) : "50"
+        });
+      } else {
+        // 兜底：推荐 Hot50 第一名
+        sendResponse({ success: true, ...hotMarkets[0] });
+      }
+    }).catch(() => {
+      sendResponse({ success: !!hotMarkets[0], ...hotMarkets[0] });
+    });
     return true;
   }
 
@@ -104,12 +176,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
 
-  // Step 8：链上指标 — 按 conditionId/slug 拉取，失败静默
+  // Step 8：链上指标 — 按 conditionId/clobTokenIds 拉取，失败静默
   if (request.type === 'FETCH_ONCHAIN') {
-    const marketKey = request.conditionId || request.marketId || request.slug;
+    const { conditionId, clobTokenIds, isNegRisk } = request;
     (async () => {
       try {
-        const metrics = await getOnchainMetrics(marketKey);
+        const metrics = await getOnchainMetrics({ conditionId, clobTokenIds, isNegRisk });
         sendResponse({ metrics: metrics || null });
       } catch (e) {
         sendResponse({ metrics: null });
