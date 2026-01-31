@@ -128,7 +128,7 @@ function showResult(event, query) {
     </div>
     <div class="pm-title pm-animate-item" style="transition-delay: 0.4s;">
       ${title}${choice && choice !== title ? ` <span class="pm-choice-inline">(${choice})</span>` : ''}
-      ${choice && choice !== title ? `<div class="pm-choice-tag">Option: ${choice}</div>` : ''}
+      ${choice && choice !== title ? `<div class="pm-choice-tag">Top Pick: ${choice}</div>` : ''}
     </div>
     
     <div class="pm-probability-container pm-animate-item" style="transition-delay: 0.6s;">

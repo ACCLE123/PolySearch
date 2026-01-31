@@ -166,9 +166,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             const sorted = scored.sort((a, b) => b.matchScore - a.matchScore);
             let topAPI = null;
             let m0 = null;
+            const getYesPrice = (m) => {
+              try {
+                const p = typeof m.outcomePrices === 'string' ? JSON.parse(m.outcomePrices) : (m.outcomePrices || []);
+                return parseFloat(p[0]) || 0;
+              } catch (_) { return 0; }
+            };
             for (const evt of sorted) {
               if (evt.matchScore < MIN_SCORE_THRESHOLD) break;
-              const activeMarket = (evt.markets || []).find((m) => m.closed !== true && m.active !== false);
+              const activeMarkets = (evt.markets || []).filter((m) => m.closed !== true && m.active !== false);
+              const activeMarket = activeMarkets.length > 0
+                ? activeMarkets.reduce((a, b) => (getYesPrice(b) > getYesPrice(a) ? b : a))
+                : null;
               if (activeMarket) {
                 topAPI = evt;
                 m0 = activeMarket;
