@@ -31,6 +31,7 @@ async function refreshHotMarkets() {
             const data = await res.json();
             if (data && data.length > 0) {
               const m = data[0];
+              if (m.closed === true || m.active === false) return; // 只保留可交易的 market
               const eventSlug = (m.events && m.events[0] && m.events[0].slug) || m.slug;
               if (seenSlugs.has(eventSlug)) return;
               seenSlugs.add(eventSlug);
