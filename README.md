@@ -1,4 +1,4 @@
-# PolySearch 🔍
+# <img src="image/logo.svg" width="40" height="40" align="center"> PolySearch 🔍
 
 ## 项目简介
 PolySearch 是一款在 Google 搜索结果中自动呈现 Polymarket 预测市场实时胜率与链上数据的智能插件。
