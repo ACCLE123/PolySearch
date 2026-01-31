@@ -137,7 +137,7 @@ function showResult(event, query) {
     </div>
 
     <div class="pm-desc pm-animate-item" style="transition-delay: 0.8s;">
-      Polymarket 预测市场 · 实时成交额 $<span data-volume-num>0</span>
+      Polymarket · Real-time Volume $<span data-volume-num>0</span>
     </div>
     <div class="pm-onchain pm-onchain-loading" data-onchain-block style="display:none;"></div>
     <div class="pm-actions pm-animate-item" style="transition-delay: 1.0s;">
