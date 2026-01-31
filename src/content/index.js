@@ -41,7 +41,10 @@ async function runSearch() {
       console.warn('[PolySearch] sendMessage:', chrome.runtime.lastError.message);
       return;
     }
-    if (!response || !response.success) return;
+    if (!response || !response.success) {
+      if (typeof showNoResultToast === 'function') showNoResultToast();
+      return;
+    }
     
     // 构造一个兼容 showResult 的对象
     const market = {

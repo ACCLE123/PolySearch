@@ -1,5 +1,40 @@
 // 向页面注入 Shadow DOM，毛玻璃弹窗 + 关闭/Dismiss + 链上区块（步骤 8）
 const ROOT_ID = 'polysearch-root';
+const NORESULT_TOAST_ID = 'polysearch-noresult-toast';
+
+const NORESULT_DURATION_MS = 4000;
+
+/**
+ * 无匹配时显示短暂提示，数秒后自动消失
+ */
+function showNoResultToast() {
+  const existing = document.getElementById(NORESULT_TOAST_ID);
+  if (existing) existing.remove();
+
+  const root = document.createElement('div');
+  root.id = NORESULT_TOAST_ID;
+  const shadow = root.attachShadow({ mode: 'open' });
+
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = chrome.runtime.getURL('src/styles/glass.css');
+  shadow.appendChild(link);
+
+  const wrap = document.createElement('div');
+  wrap.className = 'pm-toast pm-toast-visible';
+  wrap.innerHTML = `
+    <span class="pm-toast-icon">🔍</span>
+    <span class="pm-toast-text">未找到与此搜索相关的 Polymarket 市场</span>
+  `;
+  shadow.appendChild(wrap);
+  document.body.appendChild(root);
+
+  setTimeout(() => {
+    wrap.classList.remove('pm-toast-visible');
+    wrap.classList.add('pm-toast-fadeout');
+    setTimeout(() => root.remove(), 350);
+  }, NORESULT_DURATION_MS);
+}
 
 /**
  * 更新弹窗内的链上指标区块；无数据时隐藏
