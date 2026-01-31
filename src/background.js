@@ -144,27 +144,51 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         }
       }
 
-      // 3. API 兜底：如果本地热点库全军覆没，再去 API 搜
+      // 3. API 兜底：使用 public-search 接口（支持全文搜索，/markets 会忽略 q 参数）
       if (!best) {
-        console.log(`%c [Match] 本地无结果，请求 API...`, "color: #f59e0b;");
+        console.log(`%c [Match] 本地无结果，请求 public-search API...`, "color: #f59e0b;");
         try {
-          const res = await fetch(`https://gamma-api.polymarket.com/markets?active=true&closed=false&limit=10&q=${encodeURIComponent(cleanQuery)}`);
+          const res = await fetch(`https://gamma-api.polymarket.com/public-search?q=${encodeURIComponent(cleanQuery)}&limit_per_type=15`);
           const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
-            const scored = data.map((m, idx) => {
-              const text = m.question || m.groupItemTitle || "";
-              const score = getSemanticScore(text, cleanQuery, corpusStats, idx === 0); // 仅对第一个打印 debug
-              return { ...m, matchScore: score };
+          const events = data?.events;
+          if (Array.isArray(events) && events.length > 0) {
+            const scored = events.map((evt, idx) => {
+              const text = [evt.title, evt.description, evt.slug]
+                .concat((evt.markets || []).map((m) => m.question || m.groupItemTitle || ""))
+                .filter(Boolean)
+                .join(" ");
+              const score = getSemanticScore(text, cleanQuery, corpusStats, idx === 0);
+              return { ...evt, matchScore: score };
             });
             const topAPI = scored.sort((a, b) => b.matchScore - a.matchScore)[0];
             if (topAPI && topAPI.matchScore >= MIN_SCORE_THRESHOLD) {
-              best = topAPI;
-              console.log(`%c [Match] API 命中: ${best.question} (BM25 score: ${best.matchScore.toFixed(4)})`, "color: #10b981;");
+              const m0 = topAPI.markets?.[0];
+              best = {
+                slug: topAPI.slug,
+                title: topAPI.title,
+                question: topAPI.title,
+                groupItemTitle: m0?.groupItemTitle,
+                choice: m0?.groupItemTitle,
+                icon: topAPI.icon,
+                conditionId: m0?.conditionId,
+                clobTokenIds: m0?.clobTokenIds,
+                volume: topAPI.volume ?? m0?.volumeNum,
+                volumeNum: topAPI.volume ?? m0?.volumeNum,
+                outcomePrices: m0?.outcomePrices
+              };
+              try {
+                best.price = best.outcomePrices
+                  ? (parseFloat((typeof best.outcomePrices === 'string' ? JSON.parse(best.outcomePrices) : best.outcomePrices)[0]) * 100).toFixed(0)
+                  : "50";
+              } catch (_) {
+                best.price = "50";
+              }
+              console.log(`%c [Match] public-search 命中: ${best.title} (BM25 score: ${topAPI.matchScore.toFixed(4)})`, "color: #10b981;");
             } else if (topAPI) {
               console.log(`%c [Match] API 最高分 ${topAPI.matchScore.toFixed(4)} < 阈值 ${MIN_SCORE_THRESHOLD}，忽略结果`, "color: #ef4444;");
             }
           }
-        } catch (e) { 
+        } catch (e) {
           console.error('[Match] API 请求失败:', e);
         }
       }
