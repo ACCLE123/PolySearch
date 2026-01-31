@@ -38,4 +38,5 @@ PolySearch 是一款基于 Google 搜索的 Polymarket 预测市场智能助手�
 - **Polygon 网络**: 通过 `eth_getLogs` 接口从 Polymarket 智能合约获取原始成交记录，分析交易频次与资金流向。
 
 ## 团队成员
-- Polymarket Plugin Dev Team
+- Liam Yang
+- Amy Wang
