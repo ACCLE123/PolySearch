@@ -151,8 +151,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         try {
           const res = await fetch(`https://gamma-api.polymarket.com/public-search?q=${encodeURIComponent(cleanQuery)}&limit_per_type=15`);
           const data = await res.json();
-          const events = data?.events;
-          if (Array.isArray(events) && events.length > 0) {
+          const rawEvents = data?.events;
+          const events = Array.isArray(rawEvents) ? rawEvents.filter((evt) => evt.closed !== true) : [];
+          if (events.length > 0) {
             const scored = events.map((evt, idx) => {
               const text = [evt.title, evt.description, evt.slug]
                 .concat((evt.markets || []).map((m) => m.question || m.groupItemTitle || ""))
@@ -161,9 +162,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               const score = getSemanticScore(text, cleanQuery, corpusStats, idx === 0);
               return { ...evt, matchScore: score };
             });
-            const topAPI = scored.sort((a, b) => b.matchScore - a.matchScore)[0];
-            if (topAPI && topAPI.matchScore >= MIN_SCORE_THRESHOLD) {
-              const m0 = topAPI.markets?.[0];
+            const sorted = scored.sort((a, b) => b.matchScore - a.matchScore);
+            let topAPI = null;
+            let m0 = null;
+            for (const evt of sorted) {
+              if (evt.matchScore < MIN_SCORE_THRESHOLD) break;
+              const activeMarket = (evt.markets || []).find((m) => m.closed !== true && m.active !== false);
+              if (activeMarket) {
+                topAPI = evt;
+                m0 = activeMarket;
+                break;
+              }
+            }
+            if (topAPI && m0) {
               best = {
                 slug: topAPI.slug,
                 title: topAPI.title,
@@ -185,8 +196,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 best.price = "50";
               }
               console.log(`%c [Match] public-search 命中: ${best.title} (BM25 score: ${topAPI.matchScore.toFixed(4)})`, "color: #10b981;");
-            } else if (topAPI) {
-              console.log(`%c [Match] API 最高分 ${topAPI.matchScore.toFixed(4)} < 阈值 ${MIN_SCORE_THRESHOLD}，忽略结果`, "color: #ef4444;");
+            } else {
+              console.log(`%c [Match] public-search 无活跃 market 或分数不足，忽略结果`, "color: #ef4444;");
             }
           }
         } catch (e) {
