@@ -45,6 +45,8 @@ On-chain: 5-min sync → Live Volume & Trades (Polygon RPC)
 PolySearch 是一款基于 Google 搜索的 Polymarket 预测市场智能助手，能够在用户搜索时自动识别并展示相关的预测市场概率。
 
 ### 技术架构
+![项目架构图](image/structure.png)
+
 - **前端注入**: 使用 Shadow DOM 实现与原网页隔离的毛玻璃 UI (Glassmorphism)。
 - **匹配引擎**: 结合 BM25 算法与倒排索引，实现毫秒级的市场匹配。
 - **数据层**: 
