@@ -45,7 +45,8 @@ async function refreshHotMarkets() {
                 conditionId: m.conditionId,
                 clobTokenIds: typeof m.clobTokenIds === 'string' ? JSON.parse(m.clobTokenIds) : m.clobTokenIds,
                 volume: Math.round(m.volumeNum || 0),
-                price: m.outcomePrices ? (parseFloat(JSON.parse(m.outcomePrices)[0]) * 100).toFixed(0) : "50"
+                price: m.outcomePrices ? (parseFloat(JSON.parse(m.outcomePrices)[0]) * 100).toFixed(0) : "50",
+                endDate: m.endDate || m.endDateIso || (m.events && m.events[0] && (m.events[0].endDate || m.events[0].endDateIso))
               });
             }
           } catch (e) { /* ignore single error */ }
@@ -186,7 +187,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 clobTokenIds: m0?.clobTokenIds,
                 volume: topAPI.volume ?? m0?.volumeNum,
                 volumeNum: topAPI.volume ?? m0?.volumeNum,
-                outcomePrices: m0?.outcomePrices
+                outcomePrices: m0?.outcomePrices,
+                endDate: m0?.endDate || m0?.endDateIso || topAPI.endDate || topAPI.endDateIso
               };
               try {
                 best.price = best.outcomePrices
@@ -220,7 +222,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           conditionId: best.conditionId,
           clobTokenIds: typeof best.clobTokenIds === 'string' ? JSON.parse(best.clobTokenIds) : best.clobTokenIds,
           volume: Math.round(best.volumeNum || best.volume || 0),
-          price: best.price || (best.outcomePrices ? (parseFloat(JSON.parse(best.outcomePrices)[0]) * 100).toFixed(0) : "50")
+          price: best.price || (best.outcomePrices ? (parseFloat(JSON.parse(best.outcomePrices)[0]) * 100).toFixed(0) : "50"),
+          endDate: best.endDate
         });
       } else {
         sendResponse({ success: false });

@@ -52,7 +52,8 @@ async function runSearch() {
       price: response.price,
       volumeNum: response.volume,
       conditionId: response.conditionId,
-      clobTokenIds: response.clobTokenIds
+      clobTokenIds: response.clobTokenIds,
+      endDate: response.endDate
     };
 
     console.log('[PolySearch] match found (Specific), showing result');

@@ -109,6 +109,13 @@ function showResult(event, query) {
   const url = `https://polymarket.com/event/${event.slug}`;
   const iconUrl = event.icon || '';
   const probability = parseFloat(event.price || '50');
+  const endDate = event.endDate;
+  const endDateFormatted = endDate ? (() => {
+    try {
+      const d = new Date(endDate);
+      return isNaN(d.getTime()) ? null : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    } catch (_) { return null; }
+  })() : null;
 
   const wrap = document.createElement('div');
   wrap.className = 'pm-container';
@@ -136,8 +143,8 @@ function showResult(event, query) {
       </div>
     </div>
 
-    <div class="pm-desc pm-animate-item" style="transition-delay: 0.8s;">
-      Polymarket · Real-time Volume $<span data-volume-num>0</span>
+    <div class="pm-desc pm-annotations pm-animate-item" style="transition-delay: 0.8s;">
+      Polymarket · Real-time Volume $<span data-volume-num>0</span>${endDateFormatted ? `<br>Ends: ${endDateFormatted}` : ''}
     </div>
     <div class="pm-onchain pm-onchain-loading" data-onchain-block style="display:none;"></div>
     <div class="pm-actions pm-animate-item" style="transition-delay: 1.0s;">
