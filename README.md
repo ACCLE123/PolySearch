@@ -1,68 +1,44 @@
 # PolySearch 🔍
 
-**Search-driven prediction market discovery for Polymarket**
+## 项目简介
+PolySearch 是一款在 Google 搜索结果中自动呈现 Polymarket 预测市场实时胜率与链上数据的智能插件。
 
-A Chrome extension that automatically surfaces relevant Polymarket prediction markets when you search on Google.
-
----
-
-## English Version
-
-### Features
-- **Smart Matching**: BM25 ranking + inverted index + API fallback for precise market discovery
-- **Three-Tier Search**: Index recall → Global scan → Polymarket `public-search` API
-- **On-Chain Sniffer**: Fetches hot markets from Polygon every 5 minutes via `OrderFilled` logs
-- **Popup Hub**: Search markets, browse top 10 trending, live sniffer status
-- **Google Integration**: Auto-injects a market card on search results when a relevant market exists
-- **No-Result Feedback**: Toast message when no match is found (auto-dismisses in 4 seconds)
-- **Privacy-First**: Processing runs locally in your browser
-
-### How It Works
-```
-Google Search
-    → Query Detection
-    → BM25 Matching (Index ← hotMarkets ← On-chain Sniffer / Polygon RPC)
-    → Global Scan (if index empty)
-    → API Fallback (public-search)
-    → Score ≥ 2.0?
-        ├─ Yes → Market Card (Volume · Ends · Top Option · On-chain metrics)
-        └─ No  → Toast: "No Polymarket market found for this search"
-
-On-chain: 5-min sync → Live Volume & Trades (Polygon RPC)
-```
-
-### Installation
-1. Clone this repository
-2. Open `chrome://extensions/` in Chrome
-3. Enable **Developer mode**
-4. Click **Load unpacked** → Select project folder
-
----
-
-## 中文说明 (Chinese Version)
-
-### 项目简介
-PolySearch 是一款基于 Google 搜索的 Polymarket 预测市场智能助手，能够在用户搜索时自动识别并展示相关的预测市场概率。
-
-### 技术架构
+## 技术架构
 ![项目架构图](image/structure.png)
 
-- **前端注入**: 使用 Shadow DOM 实现与原网页隔离的毛玻璃 UI (Glassmorphism)。
-- **匹配引擎**: 结合 BM25 算法与倒排索引，实现毫秒级的市场匹配。
-- **数据层**: 
-  - **Gamma API**: 用于获取 Polymarket 市场的元数据和搜索。
-  - **Web3 服务**: 通过 Polygon RPC 节点直接监听链上 `OrderFilled` 事件，分析实时交易量与趋势。
-- **架构设计**: 采用 Chrome Extension Manifest V3 标准，将复杂计算与数据刷新逻辑置于 Background Service Worker。
+本项目基于 Chrome 扩展 Manifest V3 架构开发，主要包含以下核心组件：
+- **匹配引擎**: 结合 BM25 排名算法与倒排索引，实现毫秒级的本地市场检索。
+- **前端注入**: 利用 Shadow DOM 实现与原网页隔离的毛玻璃风格 (Glassmorphism) UI，确保交互无冲突。
+- **链上服务**: 直接连接 Polygon RPC 节点，实时解析 Polymarket CLOB 合约的原始 `OrderFilled` 事件日志。
 
-### 快速开始
-1. 克隆仓库: `git clone <repository-url>`
+## 快速开始
+
+### 环境要求
+- 现代浏览器 (Chrome / Edge / Brave)
+- 有效的 Polygon RPC URL (项目已内置 1rpc, llamarpc 等公共节点)
+
+### 安装步骤
+1. 克隆仓库：`git clone <repository-url>`
 2. 打开 Chrome 浏览器，进入 `chrome://extensions/`
-3. 开启右上角的 **"开发者模式" (Developer mode)**
-4. 点击 **"加载已解压的扩展程序" (Load unpacked)**，选择本项目文件夹
+3. 开启页面右上角的 **"开发者模式" (Developer mode)**
+4. 点击 **"加载已解压的扩展程序" (Load unpacked)**
+5. 选择本项目根文件夹 `polymarket_plugin`
 
----
+### 运行命令
+本项目采用原生 JavaScript 开发，无需额外的编译或构建步骤。
+- **调试**: 在扩展程序页面点击 "背景页 (service worker)" 即可查看实时链上解析日志。
+
+## 功能说明
+- **智能搜索匹配**: 在 Google 搜索时自动识别并弹出相关的预测市场卡片。
+- **动态概率展示**: 实时展示市场的成交概率、交易量及截止日期，支持数字滚动动画。
+- **链上交易审计**: 直接从区块链原始日志中解析每一笔成交的价格与金额，确保数据透明。
+- **滚动自动收纳**: UI 随搜索页面滚动自动收纳至顶部，提供无感的使用体验。
+
+## 数据来源
+- **Polymarket Gamma API**: 用于检索市场的详细描述、图标及元数据。
+- **Polygon 区块链**: 通过 `eth_getLogs` 接口直接获取原始交易数据，分析全网实时成交热点。
 
 ## 团队成员 (Team Members)
 - Liam Yang
 - Amy Wang
-- Polymarket Plugin Dev Team
+
