@@ -228,7 +228,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
       if (best) {
         const eventSlug = (best.events && best.events[0] && best.events[0].slug) || best.slug;
-        const eventTitle = (best.events && best.events[0] && best.events[0].title) || best.question || best.title || best.groupItemTitle;
+        // 优先用 event 标题（如 "Who will Trump talk to in January?"），不用 market 问题（如 "Will Trump talk to Vladimir Putin in January?"）
+        const eventTitle = (best.events && best.events[0] && best.events[0].title) || best.title || best.question || best.groupItemTitle;
         const eventIcon = best.icon || (best.events && best.events[0] && best.events[0].icon);
         const choice = best.choice || best.groupItemTitle; // 获取具体选项名
 

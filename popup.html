@@ -84,13 +84,32 @@
     }
 
     /* Trending List */
+    .section-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 16px 8px;
+    }
     .section-title {
       font-size: 12px;
       font-weight: 600;
       color: var(--text-muted);
-      padding: 16px 16px 8px;
       text-transform: uppercase;
       letter-spacing: 0.05em;
+    }
+    .refresh-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      padding: 4px;
+      color: var(--text-muted);
+      border-radius: 6px;
+      line-height: 1;
+    }
+    .refresh-btn:hover {
+      color: var(--pm-blue);
+      background: #eff6ff;
     }
 
     .market-list {
@@ -140,6 +159,12 @@
     .stat-item {
       text-align: center;
     }
+    .stat-item.stat-clickable {
+      cursor: pointer;
+    }
+    .stat-item.stat-clickable:hover {
+      color: var(--pm-blue);
+    }
 
     .stat-value {
       display: block;
@@ -183,7 +208,10 @@
     </div>
   </div>
 
-  <div class="section-title">Trending Markets</div>
+  <div class="section-title-row">
+    <span class="section-title">Trending Markets</span>
+    <button type="button" class="refresh-btn" id="refreshBtn" title="Refresh">↻</button>
+  </div>
   <div class="market-list" id="marketList">
     <!-- Markets will be injected here -->
   </div>
@@ -195,9 +223,9 @@
       <span class="stat-value" id="marketCount">100+</span>
       <span class="stat-label">On-chain Detected</span>
     </div>
-    <div class="stat-item">
+    <div class="stat-item stat-clickable" id="snifferStat" title="Click to refresh">
       <span class="stat-value" id="scanStatus">—</span>
-      <span class="stat-label">Sniffer Status</span>
+      <span class="stat-label">Sniffer Status <small style="opacity:0.6">↻</small></span>
     </div>
   </div>
 

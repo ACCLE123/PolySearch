@@ -13,11 +13,8 @@ function renderMarkets(markets) {
 
   const raw = Array.isArray(markets) ? markets : MOCK_FALLBACK;
   const displayMarkets = raw.slice(0, TOP_DISPLAY);
-  
-  if (sectionTitle) {
-    sectionTitle.innerText = `Hot Markets (${displayMarkets.length})`;
-  }
 
+  if (sectionTitle) sectionTitle.innerText = `Hot Markets (${displayMarkets.length})`;
   const marketCount = document.getElementById('marketCount');
   if (marketCount) marketCount.innerText = displayMarkets.length;
 
@@ -85,6 +82,20 @@ function updateSnifferStatus(status) {
   el.textContent = 'Waiting...';
 }
 
+let refreshPollTimer = null;
+
+function startRefreshPoll() {
+  stopRefreshPoll();
+  refreshPollTimer = setInterval(fetchMarkets, 2500);
+}
+
+function stopRefreshPoll() {
+  if (refreshPollTimer) {
+    clearInterval(refreshPollTimer);
+    refreshPollTimer = null;
+  }
+}
+
 function fetchMarkets() {
   const marketList = document.getElementById('marketList');
   marketList.innerHTML = '<div style="text-align:center;padding:20px;font-size:12px;color:#999;">Updating...</div>';
@@ -94,11 +105,17 @@ function fetchMarkets() {
       console.error("Runtime Error:", chrome.runtime.lastError);
       renderMarkets(MOCK_FALLBACK);
       updateSnifferStatus(null);
+      stopRefreshPoll();
       return;
     }
 
     if (response?.snifferStatus) {
       updateSnifferStatus(response.snifferStatus);
+      if (response.snifferStatus.scanning) {
+        startRefreshPoll();
+      } else {
+        stopRefreshPoll();
+      }
     }
 
     if (response && response.success) {
@@ -145,6 +162,9 @@ document.addEventListener('DOMContentLoaded', () => {
   fetchMarkets();
 
   document.getElementById('goHome').onclick = () => window.open('https://polymarket.com', '_blank');
+
+  document.getElementById('refreshBtn').onclick = () => fetchMarkets();
+  document.getElementById('snifferStat').onclick = () => fetchMarkets();
 
   const searchInput = document.getElementById('searchInput');
   searchInput.addEventListener('keypress', (e) => {
