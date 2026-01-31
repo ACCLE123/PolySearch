@@ -96,8 +96,11 @@ export function getSemanticScore(title, query, corpusStats = {}, debug = false) 
     else if (docTokens.includes(qToken)) {
       exactBoost += 5.0;
     }
-    // 子串匹配加分（处理 "btc" 匹配 "bitcoin" 的情况）
-    else if (docTokens.some(dToken => dToken.includes(qToken) || qToken.includes(dToken))) {
+    // 子串匹配加分（处理 "btc" 匹配 "bitcoin" 的情况）；忽略单字符 token，避免 O/U 等误匹配
+    else if (docTokens.some(dToken => {
+      if (dToken.length < 2) return false;
+      return dToken.includes(qToken) || qToken.includes(dToken);
+    })) {
       exactBoost += 1.0;
     }
   });

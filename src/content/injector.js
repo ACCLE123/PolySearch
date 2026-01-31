@@ -24,7 +24,7 @@ function showNoResultToast() {
   wrap.className = 'pm-toast pm-toast-visible';
   wrap.innerHTML = `
     <span class="pm-toast-icon">🔍</span>
-    <span class="pm-toast-text">未找到与此搜索相关的 Polymarket 市场</span>
+    <span class="pm-toast-text">No Polymarket market found for this search</span>
   `;
   shadow.appendChild(wrap);
   document.body.appendChild(root);
