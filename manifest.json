@@ -13,6 +13,8 @@
     "https://polygon-rpc.com/*",
     "https://rpc-mainnet.maticvigil.com/*",
     "https://polygon.llamarpc.com/*",
+    "https://rpc.ankr.com/polygon/*",
+    "https://polygon-bor-rpc.publicnode.com/*",
     "https://1rpc.io/matic/*",
     "*://*.google.com/*",
     "*://*.google.com.hk/*"
