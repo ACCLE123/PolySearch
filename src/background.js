@@ -7,10 +7,14 @@ import { getOnchainMetrics, discoverLiveHotTokens } from './web3/onchainService.
 const marketIndex = new MarketIndex();
 let hotMarkets = []; // 全局实时热点库
 
+/** Sniffer 状态：供 popup 展示（每 5 分钟链上拉取 token 的任务） */
+let snifferStatus = { scanning: false, ok: false, lastScanAt: null };
+
 /**
  * 核心任务：周期性从链上嗅探热门市场，并反查 API 补全元数据
  */
 async function refreshHotMarkets() {
+  snifferStatus.scanning = true;
   try {
     console.log("%c [Core] 开始实时链上热点探测...", "color: #3b82f6;");
     
@@ -58,11 +62,16 @@ async function refreshHotMarkets() {
     // 2. 更新并排序热点库
     if (newHotMarkets.length > 0) {
       hotMarkets = newHotMarkets.sort((a, b) => b.volume - a.volume);
-      marketIndex.update(hotMarkets); // [新增] 更新倒排索引
+      marketIndex.update(hotMarkets);
       console.log(`%c [Core] 链上热点就绪: ${hotMarkets.length} 个`, "color: #10b981; font-weight: bold;");
     }
+    snifferStatus.ok = newHotMarkets.length > 0;
+    snifferStatus.lastScanAt = Date.now();
   } catch (err) {
     console.error("[Core] 刷新失败:", err);
+    snifferStatus.ok = false;
+  } finally {
+    snifferStatus.scanning = false;
   }
 }
 
@@ -77,13 +86,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   
   // 1. 弹出页数据请求
   if (request.type === 'FETCH_MARKETS') {
+    const withStatus = (payload) => ({ ...payload, snifferStatus: { ...snifferStatus } });
     if (hotMarkets.length > 0) {
-      sendResponse({ success: true, data: hotMarkets });
+      sendResponse(withStatus({ success: true, data: hotMarkets }));
     } else {
       fetch('https://gamma-api.polymarket.com/events?limit=15&active=true&closed=false')
         .then(r => r.json())
-        .then(data => sendResponse({ success: true, data }))
-        .catch(err => sendResponse({ success: false, error: err.message }));
+        .then(data => sendResponse(withStatus({ success: true, data })))
+        .catch(err => sendResponse(withStatus({ success: false, error: err.message })));
     }
     return true;
   }

@@ -4,12 +4,15 @@ const MOCK_FALLBACK = [
   { question: "Will GTA VI be delayed?", price: "15" }
 ];
 
+const TOP_DISPLAY = 10;
+
 function renderMarkets(markets) {
   const marketList = document.getElementById('marketList');
   const sectionTitle = document.querySelector('.section-title');
   marketList.innerHTML = '';
-  
-  const displayMarkets = Array.isArray(markets) ? markets : MOCK_FALLBACK;
+
+  const raw = Array.isArray(markets) ? markets : MOCK_FALLBACK;
+  const displayMarkets = raw.slice(0, TOP_DISPLAY);
   
   if (sectionTitle) {
     sectionTitle.innerText = `Hot Markets (${displayMarkets.length})`;
@@ -56,6 +59,32 @@ function renderMarkets(markets) {
   });
 }
 
+/**
+ * 更新 Sniffer 状态展示（每 5 分钟链上拉取 token 的任务）
+ * @param {{ scanning?: boolean, ok?: boolean, lastScanAt?: number } | null} status
+ */
+function updateSnifferStatus(status) {
+  const el = document.getElementById('scanStatus');
+  if (!el) return;
+  if (!status) {
+    el.textContent = '—';
+    return;
+  }
+  if (status.scanning) {
+    el.textContent = 'Scanning...';
+    return;
+  }
+  if (status.ok && status.lastScanAt) {
+    el.textContent = 'Live';
+    return;
+  }
+  if (status.lastScanAt) {
+    el.textContent = 'Failed';
+    return;
+  }
+  el.textContent = 'Waiting...';
+}
+
 function fetchMarkets() {
   const marketList = document.getElementById('marketList');
   marketList.innerHTML = '<div style="text-align:center;padding:20px;font-size:12px;color:#999;">Updating...</div>';
@@ -64,7 +93,12 @@ function fetchMarkets() {
     if (chrome.runtime.lastError) {
       console.error("Runtime Error:", chrome.runtime.lastError);
       renderMarkets(MOCK_FALLBACK);
+      updateSnifferStatus(null);
       return;
+    }
+
+    if (response?.snifferStatus) {
+      updateSnifferStatus(response.snifferStatus);
     }
 
     if (response && response.success) {
@@ -76,15 +110,46 @@ function fetchMarkets() {
   });
 }
 
+/**
+ * Popup 搜索：先用 BM25 + API 智能匹配，命中则直接打开 event，否则回退到 Polymarket 搜索页
+ */
+function handlePopupSearch(query) {
+  const q = (query || '').trim();
+  if (!q) return;
+
+  const searchInput = document.getElementById('searchInput');
+  const origPlaceholder = searchInput?.placeholder || 'Search markets...';
+  if (searchInput) {
+    searchInput.disabled = true;
+    searchInput.placeholder = 'Searching...';
+  }
+
+  chrome.runtime.sendMessage({ type: 'SEARCH_SPECIFIC_MARKET', query: q }, (response) => {
+    if (searchInput) {
+      searchInput.disabled = false;
+      searchInput.placeholder = origPlaceholder;
+    }
+    if (chrome.runtime.lastError) {
+      window.open(`https://polymarket.com/search?q=${encodeURIComponent(q)}`, '_blank');
+      return;
+    }
+    if (response && response.success && response.slug) {
+      window.open(`https://polymarket.com/event/${response.slug}`, '_blank');
+    } else {
+      window.open(`https://polymarket.com/search?q=${encodeURIComponent(q)}`, '_blank');
+    }
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   fetchMarkets();
-  
+
   document.getElementById('goHome').onclick = () => window.open('https://polymarket.com', '_blank');
-  
+
   const searchInput = document.getElementById('searchInput');
   searchInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter' && searchInput.value) {
-      window.open(`https://polymarket.com/search?q=${encodeURIComponent(searchInput.value)}`, '_blank');
+      handlePopupSearch(searchInput.value);
     }
   });
 });
