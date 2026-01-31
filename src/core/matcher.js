@@ -92,6 +92,10 @@ export function getSemanticScore(title, query, corpusStats = {}, debug = false) 
     if (coreKeywords.includes(qToken) && docTokens.includes(qToken)) {
       exactBoost += 5.0;
     }
+    // 精确词匹配（query 词完整出现在 doc 中）：强信号，+5（如 lululemon、apple）
+    else if (docTokens.includes(qToken)) {
+      exactBoost += 5.0;
+    }
     // 子串匹配加分（处理 "btc" 匹配 "bitcoin" 的情况）
     else if (docTokens.some(dToken => dToken.includes(qToken) || qToken.includes(dToken))) {
       exactBoost += 1.0;
